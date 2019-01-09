@@ -18,7 +18,8 @@ from PySide2.QtWidgets import QApplication, QMdiArea, QTreeWidgetItem, \
     QMessageBox, QMdiSubWindow, QTableView, QToolBox, QFrame, QListView, \
     QTableWidget, QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
     QTabWidget, QTreeWidget, QSpinBox, QLabel, QGroupBox, QPushButton, QFileDialog,\
-    QMenu, QInputDialog, QDoubleSpinBox, QTableWidgetItem, QDateEdit, QProgressBar, QToolBar, QCalendarWidget, QWidget
+    QMenu, QInputDialog, QDoubleSpinBox, QTableWidgetItem, QDateEdit, QProgressBar, \
+    QToolBar, QCalendarWidget, QWidget, QAbstractButton
 from PySide2.QtCore import QFile, QObject, Qt
 from PySide2 import QtGui
 os.environ["QT_API"] = "pyqt5"
@@ -92,6 +93,10 @@ class BT(QObject):
         self.loadWidget()
         self.loadShowToolBox()
         self.connectSignal()
+
+    def loadUI(self, file_name):
+        loader = QUiLoader()
+        return loader.load(file_name)
 
     def loadWidget(self):
         self.mdi_area = self.window.findChild(QMdiArea, "display_mdiArea")
@@ -361,6 +366,9 @@ class BT(QObject):
             if i.btType==bt_type and i.windowTitle() == text:
                 self.mdi_area.setActiveSubWindow(i)
                 return True
+
+    def onCornerButtonRightClicked(self):
+        print(1111)
 
     def onBackTestTreeRightClicked(self):
         menu = QMenu(self.backtest_tree)
@@ -2029,9 +2037,8 @@ class BT(QObject):
     def onActionIndicator(self):
         print(2222222222)
 
-    def onTableViewColumnDoubleClicked(self, index):
-
-        print(index)
+    def onTableViewColumnClicked(self, index):
+        return
 
     def onTableViewRowDoubleClicked(self, index):
         childSubWindow = getattr(self.mdi_area.currentSubWindow(), "childSubWindow")
@@ -2060,7 +2067,7 @@ class BT(QObject):
 
         return
 
-    def onTableViewColumnDoubleClicked(self, index):
+    def onTableViewColumnDoubleClicked(self, index, evt):
         currentSubWindow = self.mdi_area.currentSubWindow()
         tableView = currentSubWindow.findChild(QTableView)
         selectedColumns = [selection.column() for selection in tableView.selectionModel().selectedColumns()]
@@ -2313,6 +2320,7 @@ class BT(QObject):
             return
         if index_column:
             data.index = list(data[index_column])
+            data.index.name = index_column
         subWindow = QMdiSubWindow()
         setattr(subWindow, "btData", data)
         setattr(subWindow, "btId", id)
@@ -2323,15 +2331,28 @@ class BT(QObject):
 
         tableView = QTableView()
         #双击列的信号
-        tableView.horizontalHeader().sectionDoubleClicked.connect(self.onTableViewColumnDoubleClicked)
+        tableView.horizontalHeader().sectionDoubleClicked.connect(lambda event: self.onTableViewColumnDoubleClicked(event, None))
         #双击行的信号
         tableView.verticalHeader().sectionDoubleClicked.connect(self.onTableViewRowDoubleClicked)
         #双击cell的信号
         tableView.doubleClicked.connect(self.onTableViewCellDoubleClicked)
 
+        #single click column
+        # tableView.horizontalHeader().sectionDoubleClicked.connect(self.onTableViewColumnClicked)
+        #
+        # tableView.horizontalHeader().customContextMenuRequested.connect(self.onCornerButtonRightClicked)
+
+
+        cornerButton = tableView.findChild(QAbstractButton)
+        cornerButton.customContextMenuRequested.connect(self.onCornerButtonRightClicked)
+
         tableView.setWindowTitle(title)
+
+        proxyModel = QtCore.QSortFilterProxyModel(subWindow)
         mode = pandas_mode.PandasModel(data)
-        tableView.setModel(mode)
+        proxyModel.setSourceModel(mode)
+        tableView.setModel(proxyModel)
+
         columns_list = list(data.columns)
         if hidden_columns:
             for i in hidden_columns:
@@ -2345,17 +2366,17 @@ class BT(QObject):
 
     def _show_plot_sub_window(self, data_frame):
         loader = QUiLoader()
-        subwindow = loader.load("plot.ui")
+        subwindow = self.loadUI("plot.ui")
         subwindow.setWindowTitle("图形展示")
 
         pwidget = subwindow.findChild(QWidget)
 
-        self.canvas = FigureCanvas(Figure())
-        self.canvas.figure.add_subplot(111)
-        self.canvas.axes = self.canvas.figure.add_subplot(111)
+        canvas = FigureCanvas(Figure())
+        canvas.figure.add_subplot(111)
+        canvas.axes = canvas.figure.add_subplot(111)
 
-        self.canvas.mpl_connect('motion_notify_event', self.onPlotMotion)
-        self.canvas.mpl_connect('key_press_event', self.onPlotPress)
+        canvas.mpl_connect('motion_notify_event', lambda event: self.onPlotMotion(event, canvas))
+        canvas.mpl_connect('key_press_event', self.onPlotPress)
 
         cols = list(data_frame.columns)
         index = list(data_frame.index)
@@ -2364,41 +2385,43 @@ class BT(QObject):
             self.label_text[i] = []
             for j in range(0, len(cols)):
                 col_data = float(data_frame.iloc[i, j])
-                self.label_text[i].append(self.canvas.axes.annotate("%s:%s\n%s:%s" %
+                self.label_text[i].append(canvas.axes.annotate("%s:%s\n%s:%s" %
                                                              (index_name, index[i], cols[j], col_data), (i, col_data),
                                                              bbox=dict(boxstyle="round", fc="w", ec="k"), visible=False,
                                                              size=0.3 * 36))
                 # self.label_text[i, col_data] = self.axes.annotate("%s: %s" % (cols[j], col_data), (i, col_data), visible=False)
-        axes = data_frame.plot(ax=self.canvas.axes, legend=True, subplots=self.subplot)
+        axes = data_frame.plot(ax=canvas.axes, legend=True, subplots=self.subplot)
         # self.axes.legend(loc="best")
         # x_label = to_unicode(index_name)
         # x_label = index_name
         axes.set_xlabel(index_name)
         axes.grid(True)
         axes.tick_params(axis='x', labelsize=7)
-        toolbar = NavigationToolbar2QT(self.canvas, pwidget)
+        toolbar = NavigationToolbar2QT(canvas, pwidget)
         toolbar.update()
         l = QtWidgets.QVBoxLayout(pwidget)
         l.addWidget(toolbar)
-        l.addWidget(self.canvas)
+        l.addWidget(canvas)
+        subwindow.setAttribute(Qt.WA_DeleteOnClose)
 
         self.mdi_area.addSubWindow(subwindow)
         subwindow.show()
 
-    def onPlotMotion(self, evt):
+    def onPlotMotion(self, evt, canvas):
         for texts in self.label_text.values():
             for text in texts:
                 if text.get_visible():
                     text.set_visible(False)
         if evt.inaxes:
             mycursor = QtGui.QCursor()
-            self.canvas.setCursor(mycursor)
-            self.xpos = int(evt.xdata)
-            annotations = self.label_text.get(self.xpos, [])
+            canvas.setCursor(mycursor)
+            #self.canvas.setCursor(mycursor)
+            xpos = int(evt.xdata)
+            annotations = self.label_text.get(xpos, [])
             for annotation in annotations:
                 if not annotation.get_visible():             # is entered
                     annotation.set_visible(True)
-            self.canvas.axes.figure.canvas.draw()
+            canvas.axes.figure.canvas.draw()
 
     def onPlotPress(self, evt):
         return
