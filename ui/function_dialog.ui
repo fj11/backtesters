@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>627</width>
+    <height>546</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>请输入新列名称*</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="column_name">
+       <property name="dragEnabled">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3"/>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QTabWidget" name="function_tab">
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="cal_tab">
+        <attribute name="title">
+         <string>运算函数</string>
+        </attribute>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <item>
+          <widget class="QListWidget" name="cal_list1"/>
+         </item>
+         <item>
+          <widget class="QComboBox" name="function_box">
+           <item>
+            <property name="text">
+             <string>求和</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>求差</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>求积</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>求商</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>求幂</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>正弦</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>余弦</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>正切</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>反正弦</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>反余弦</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>反正切</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>指数</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>开平方</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QListWidget" name="cal_list2">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="rel_tab">
+        <attribute name="title">
+         <string>关系函数</string>
+        </attribute>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <item>
+          <widget class="QListWidget" name="rel_list1"/>
+         </item>
+         <item>
+          <widget class="QComboBox" name="rel_box">
+           <item>
+            <property name="text">
+             <string>上穿</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>下穿</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>大于</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>大于或等于</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>小于</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>小于或等于</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>等于</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>且</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>或</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>非</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QListWidget" name="rel_list2">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tec_tab">
+        <attribute name="title">
+         <string>技术函数</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QSplitter" name="splitter">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <widget class="QWidget" name="layoutWidget">
+            <layout class="QVBoxLayout" name="verticalLayout_2">
+             <item>
+              <widget class="QLineEdit" name="search_input"/>
+             </item>
+             <item>
+              <widget class="QTreeWidget" name="tec_tree">
+               <attribute name="headerVisible">
+                <bool>false</bool>
+               </attribute>
+               <column>
+                <property name="text">
+                 <string notr="true">1</string>
+                </property>
+               </column>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QGroupBox" name="parameter_box">
+            <property name="title">
+             <string>参数</string>
+            </property>
+           </widget>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="sta_tab">
+        <attribute name="title">
+         <string>统计函数</string>
+        </attribute>
+       </widget>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>Dialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
