@@ -117,6 +117,7 @@ class BT(QObject):
         self.add_option_group = self.window.findChild(QAction, "action_add_option_group")
         self.add_option_contract = self.window.findChild(QAction, "action_add_option_contract")
         self.delete_backtest_tree_item = self.window.findChild(QAction, "action_delete")
+        self.filter = self.window.findChild(QAction, "action_filter")
 
         self.backtest_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.backtest_tree.topLevelItem(0).setExpanded(True)
@@ -161,6 +162,7 @@ class BT(QObject):
         self.add_option_group.triggered.connect(self.onAddOptionGroup)
         self.add_option_contract.triggered.connect(self.onAddOptionContract)
         self.delete_backtest_tree_item.triggered.connect(self.onDeleteBackTestTreeItem)
+        self.filter.triggered.connect(self.onFilter)
         self.mdi_area.subWindowActivated.connect(self.onSubWindoActivated)
 
         self._connectBackTestOptionSignal()
@@ -476,6 +478,36 @@ class BT(QObject):
     def onSignalChanged(self, index):
         current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
         current_node["signal"]["value"] = index
+
+    def onFilter(self):
+        subWindow = self.loadUI("table_filter.ui")
+
+        table_subwindows = [i for i in self.mdi_area.subWindowList() if hasattr(i, "btData") and getattr(i, "btData") is not None]
+        table_ids = [getattr(i, "btId") for i in table_subwindows]
+
+        table_list = subWindow.findChild(QComboBox, "table_list")
+        table_list.addItems(table_ids)
+        table_list.currentIndexChanged.connect(lambda event: self.onFilterTableChanged(event, subWindow, table_subwindows))
+
+        subWindow.setAttribute(Qt.WA_DeleteOnClose)
+        self.mdi_area.addSubWindow(subWindow)
+        subWindow.show()
+        return
+
+    def onFilterTableChanged(self, index, subwindow, tables):
+        table = tables[index]
+        filter_tree = subwindow.findChild(QTreeWidget)
+        display_list = subwindow.findChild(QListWidget)
+        data = getattr(table, "btData")
+        hidden_columns = getattr(table, "hidden_columns")
+        if hasattr(table, "btFilter"):
+            filter = getattr(table, "btFilter")
+        else:
+            filter = None
+        print(table)
+        print(filter_tree)
+        print(display_list)
+
 
     def onDeleteBackTestTreeItem(self):
         current_item = self.backtest_tree.currentItem()
@@ -2365,6 +2397,8 @@ class BT(QObject):
         subWindow.show()
 
     def _show_plot_sub_window(self, data_frame):
+        if data_frame.empty:
+            return
         loader = QUiLoader()
         subwindow = self.loadUI("plot.ui")
         subwindow.setWindowTitle("图形展示")

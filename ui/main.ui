@@ -64,6 +64,7 @@
      <string>数据</string>
     </property>
     <addaction name="actionupdate"/>
+    <addaction name="action_filter"/>
    </widget>
    <widget class="QMenu" name="indicator">
     <property name="title">
@@ -144,6 +145,7 @@
    <addaction name="actionsettings"/>
    <addaction name="separator"/>
    <addaction name="actionupdate"/>
+   <addaction name="action_filter"/>
    <addaction name="separator"/>
    <addaction name="actionfunction"/>
    <addaction name="separator"/>
@@ -822,6 +824,15 @@
   <action name="actionstrategy_management">
    <property name="text">
     <string>策略管理</string>
+   </property>
+  </action>
+  <action name="action_filter">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icon/filter.png</normaloff>../icon/filter.png</iconset>
+   </property>
+   <property name="text">
+    <string>过滤</string>
    </property>
   </action>
  </widget>
