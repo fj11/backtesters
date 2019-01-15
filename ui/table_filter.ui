@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
-    <height>480</height>
+    <width>693</width>
+    <height>388</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
@@ -29,28 +29,60 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
-      <widget class="QListWidget" name="display_list"/>
+      <widget class="QListWidget" name="display_list">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::MultiSelection</enum>
+       </property>
+      </widget>
      </item>
      <item>
-      <widget class="QTreeWidget" name="filter_tree">
-       <column>
-        <property name="text">
-         <string>列</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>条件</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>值</string>
-        </property>
-       </column>
-      </widget>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QTreeWidget" name="filter_tree">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <attribute name="headerVisible">
+          <bool>true</bool>
+         </attribute>
+         <column>
+          <property name="text">
+           <string>列</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>条件</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>值</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QPushButton" name="add_filter">
+           <property name="text">
+            <string>添加</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="delete_filter">
+           <property name="text">
+            <string>删除</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

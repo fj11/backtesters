@@ -90,7 +90,6 @@
     <property name="title">
      <string>显示</string>
     </property>
-    <addaction name="action_manul_signal"/>
    </widget>
    <widget class="QMenu" name="help">
     <property name="title">

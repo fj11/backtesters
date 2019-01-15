@@ -489,25 +489,134 @@ class BT(QObject):
         table_list.addItems(table_ids)
         table_list.currentIndexChanged.connect(lambda event: self.onFilterTableChanged(event, subWindow, table_subwindows))
 
+        display_list = subWindow.findChild(QListWidget)
+        display_list.itemSelectionChanged.connect(lambda: self.onDisplayListItemSelectionChanged(subWindow, table_subwindows))
+
+        columns = subWindow.findChild(QListWidget, "display_list")
+
+        filter_tree = subWindow.findChild(QTreeWidget)
+
+        add_filter = subWindow.findChild(QPushButton, "add_filter")
+        delete_filter = subWindow.findChild(QPushButton, "delete_filter")
+
+        filter_tree = subWindow.findChild(QTreeWidget)
+        add_filter.clicked.connect(lambda : self.onAddFilter(subWindow, table_subwindows))
+        delete_filter.clicked.connect(lambda : self.onDeleteFilter(filter_tree))
+
         subWindow.setAttribute(Qt.WA_DeleteOnClose)
         self.mdi_area.addSubWindow(subWindow)
         subWindow.show()
         return
 
+    def onFilterTreeCellEntered(self, filter_tree, table):
+        # count = filter_tree.topLevelItemCount()
+        # data = getattr(table, "btData")
+        # for i in range(count):
+        #     item = filter_tree.topLevelItem(i)
+        #     column_item = filter_tree.itemWidget(item, 0)
+        #
+        #     condition_item = filter_tree.itemWidget(item, 1)
+        #     value_item = filter_tree.itemWidget(item, 2)
+        #
+        #     column = column_item.currentText()
+        #     condition = condition_item.currentText()
+        #     value = value_item.text()
+        #
+        #     if condition == "大于":
+        #         data = data[column > value]
+        #     elif condition == "大于且等于":
+        #         data = data[column >= value]
+        #     elif condition == "小于":
+        #         data = data[column < value]
+        #     elif condition == "小于且等于":
+        #         data = data[column <= value]
+        #     elif condition == "等于":
+        #         data = data[column == value]
+        #         print(data)
+        #     elif condition == "包含于":
+        #         data = data[column.str.contains(value)]
+        #     # elif condition == "不包含于":
+        #     #     data = data[column.str.contains(value)]
+        #     self.__display_table(data, table)
+
+        return
+
+    def onAddFilter(self, subWindow, table_subwindows):
+        filter_tree = subWindow.findChild(QTreeWidget)
+        table_list = subWindow.findChild(QComboBox, "table_list")
+        index = table_list.currentIndex()
+        table = table_subwindows[index]
+
+        data = getattr(table, "btData")
+        columns = list(data.columns)
+
+        value_list = QComboBox()
+        value_list.addItems(columns)
+
+        condition_list = QComboBox()
+        condition_list.addItems(["大于", "大于且等于", "小于", "小于且等于", "等于", "包含于"])
+
+        line_edit = QLineEdit()
+        line_edit.textChanged.connect(lambda : self.onFilterTreeCellEntered(filter_tree, table))
+
+        filterItem = QTreeWidgetItem()
+        filter_tree.addTopLevelItem(filterItem)
+
+        filter_tree.setItemWidget(filterItem, 0, value_list)
+        filter_tree.setItemWidget(filterItem, 1, condition_list)
+        filter_tree.setItemWidget(filterItem, 2, line_edit)
+        return
+
+    def onDeleteFilter(self, filter_tree):
+        current_item = filter_tree.currentItem()
+        current_index = filter_tree.indexOfTopLevelItem(current_item)
+        filter_tree.takeTopLevelItem(current_index)
+        return
+
     def onFilterTableChanged(self, index, subwindow, tables):
         table = tables[index]
         filter_tree = subwindow.findChild(QTreeWidget)
+        filter_tree.clear()
+
         display_list = subwindow.findChild(QListWidget)
         data = getattr(table, "btData")
+        columns = list(data.columns)
         hidden_columns = getattr(table, "hidden_columns")
         if hasattr(table, "btFilter"):
             filter = getattr(table, "btFilter")
         else:
             filter = None
-        print(table)
-        print(filter_tree)
-        print(display_list)
+        display_list.clear()
 
+        display_list.addItems(columns)
+
+        for i in range(len(columns)):
+            text = columns[i]
+            if text not in hidden_columns:
+                item = display_list.item(i)
+                display_list.setItemSelected(item, True)
+        #display_list.itemSelectionChanged.connect(lambda: self.onDisplayListItemSelectionChanged(subwindow, table))
+
+    def onFilterTreeAdded(self):
+        return
+
+    def onDisplayListItemSelectionChanged(self, subWindow, tables):
+
+        table_list = subWindow.findChild(QComboBox, "table_list")
+        index = table_list.currentIndex()
+        table = tables[index]
+
+        display_list = subWindow.findChild(QListWidget)
+
+        items = [display_list.item(i).text() for i in range(display_list.count())]
+        display_items = [i.text() for i in display_list.selectedItems()]
+
+        hidden_columns = list(set(items).difference(set(display_items)))
+        setattr(table, "hidden_columns", hidden_columns)
+        data = getattr(table, "btData")
+
+        self.__display_table(data, table)
+        return
 
     def onDeleteBackTestTreeItem(self):
         current_item = self.backtest_tree.currentItem()
@@ -774,7 +883,7 @@ class BT(QObject):
     def about(self):
         QMessageBox.about(self.window, "About Backtester",
                           """<b>Platform Details</b>
-                            <p>Copyright &copy; 2018 Jian Feng.
+                            <p>Copyright &copy; 2018.
                             <p>简易，灵活，全方位回测是我们的目标，
                             将量化及期权平民化，非编程化是我们的宗旨!
                             只要您能想到的，回测者就能帮您实现，
@@ -2211,7 +2320,14 @@ class BT(QObject):
                           'date',
                           'open_interest'
                           ]
-        data = sql.read(table)
+        if id == "510050.XSHG":
+            where = "date > '2015-02-08 00:00:00'"
+        else:
+            where = None
+        if where:
+            data = sql.read(table, where=where)
+        else:
+            data = sql.read(table)
         self._show_table_sub_window(name, data, id=id,
                                     hidden_columns=hidden_columns,
                                     index_column='date',
@@ -2374,7 +2490,6 @@ class BT(QObject):
         #
         # tableView.horizontalHeader().customContextMenuRequested.connect(self.onCornerButtonRightClicked)
 
-
         cornerButton = tableView.findChild(QAbstractButton)
         cornerButton.customContextMenuRequested.connect(self.onCornerButtonRightClicked)
 
@@ -2391,6 +2506,7 @@ class BT(QObject):
                 if i in columns_list:
                     index = columns_list.index(i)
                     tableView.setColumnHidden(index, True)
+
         subWindow.setAttribute(Qt.WA_DeleteOnClose)
         subWindow.setWidget(tableView)
         self.mdi_area.addSubWindow(subWindow)
@@ -2460,19 +2576,21 @@ class BT(QObject):
     def onPlotPress(self, evt):
         return
 
-    def __display_table(self, data):
-        currentSubWindow = self.mdi_area.currentSubWindow()
+    def __display_table(self, data, currentSubWindow=None):
+        if currentSubWindow is None:
+            currentSubWindow = self.mdi_area.currentSubWindow()
         tableView = currentSubWindow.findChild(QTableView)
+        tableView.clearSpans()
         mode = pandas_mode.PandasModel(data)
         tableView.setModel(mode)
         columns_list = list(data.columns)
         hidden_columns = getattr(currentSubWindow, "hidden_columns")
-        if hidden_columns:
-            currentSubWindow.hidden_columns = hidden_columns
-            for i in hidden_columns:
-                if i in columns_list:
-                    index = columns_list.index(i)
-                    tableView.setColumnHidden(index, True)
+        for i in columns_list:
+            index = columns_list.index(i)
+            if i in hidden_columns:
+                tableView.setColumnHidden(index, True)
+            else:
+                tableView.setColumnHidden(index, False)
 
     def __calculate_signal(self, text, col1, col2, signal_number):
         relation_signal = 0
