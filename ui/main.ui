@@ -834,6 +834,11 @@
     <string>过滤</string>
    </property>
   </action>
+  <action name="display_action">
+   <property name="text">
+    <string>显示设置</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

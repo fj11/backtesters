@@ -94,9 +94,9 @@ class BT(QObject):
         self.loadShowToolBox()
         self.connectSignal()
 
-    def loadUI(self, file_name):
+    def loadUI(self, file_name, parentWidget=None):
         loader = QUiLoader()
-        return loader.load(file_name)
+        return loader.load(file_name, parentWidget=parentWidget)
 
     def loadWidget(self):
         self.mdi_area = self.window.findChild(QMdiArea, "display_mdiArea")
@@ -116,6 +116,7 @@ class BT(QObject):
         self.add_option_underlying = self.window.findChild(QAction, "action_add_option_underlying")
         self.add_option_group = self.window.findChild(QAction, "action_add_option_group")
         self.add_option_contract = self.window.findChild(QAction, "action_add_option_contract")
+        self.display_setting = self.window.findChild(QAction, "display_action")
         self.delete_backtest_tree_item = self.window.findChild(QAction, "action_delete")
         self.filter = self.window.findChild(QAction, "action_filter")
 
@@ -162,7 +163,8 @@ class BT(QObject):
         self.add_option_group.triggered.connect(self.onAddOptionGroup)
         self.add_option_contract.triggered.connect(self.onAddOptionContract)
         self.delete_backtest_tree_item.triggered.connect(self.onDeleteBackTestTreeItem)
-        self.filter.triggered.connect(self.onFilter)
+        self.display_setting.triggered.connect(self.onDisplay)
+        #self.filter.triggered.connect(self.onFilter)
         self.mdi_area.subWindowActivated.connect(self.onSubWindoActivated)
 
         self._connectBackTestOptionSignal()
@@ -478,6 +480,70 @@ class BT(QObject):
     def onSignalChanged(self, index):
         current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
         current_node["signal"]["value"] = index
+
+    def onDisplay(self):
+
+        widget = self.loadUI("grid_display.ui", parentWidget=self.window)
+        widget.setWindowTitle("显示设置")
+
+        button_box = widget.findChild(QDialogButtonBox, "buttonBox")
+
+        hide_button = widget.findChild(QPushButton, "hide")
+        show_button = widget.findChild(QPushButton, "show")
+
+        show_list = widget.findChild(QListWidget, "show_list")
+        hide_list = widget.findChild(QListWidget, "hide_list")
+
+        sub_window = self.mdi_area.currentSubWindow()
+        data = getattr(sub_window, "btData")
+        columns = list(data.columns)
+        hidden_columns = getattr(sub_window, "hidden_columns")
+        show_columns = [i for i in columns if i not in hidden_columns]
+
+        hide_list.addItems(hidden_columns)
+        show_list.addItems(show_columns)
+
+        hide_button.clicked.connect(lambda: self.onHideButtonClicked(show_list, hide_list))
+        show_button.clicked.connect(lambda: self.onShowButtonClicked(show_list, hide_list))
+
+        button_box.accepted.connect(lambda: self.onGridDisplayAccept(show_list, hide_list, sub_window))
+        button_box.rejected.connect(self.onGridDisplayReject)
+
+        widget.show()
+
+    def onGridDisplayAccept(self, show_list, hide_list, sub_window):
+
+        items_text = [hide_list.item(i).text() for i in range(hide_list.count())]
+
+        setattr(sub_window, "hidden_columns", items_text)
+        data = getattr(sub_window, "btData")
+
+        self.__display_table(data, sub_window)
+
+        return
+
+    def onGridDisplayReject(self):
+        return
+
+    def onHideButtonClicked(self, show_list, hide_list):
+        selected_items = show_list.selectedItems()
+        selected_items_text = [i.text() for i in selected_items]
+        for i in selected_items:
+            index = show_list.indexFromItem(i).row()
+            show_list.takeItem(index)
+
+        hide_list.addItems(selected_items_text)
+        return
+
+    def onShowButtonClicked(self, show_list, hide_list):
+        selected_items = hide_list.selectedItems()
+        selected_items_text = [i.text() for i in selected_items]
+        for i in selected_items:
+            index = hide_list.indexFromItem(i).row()
+            hide_list.takeItem(index)
+
+        show_list.addItems(selected_items_text)
+        return
 
     def onFilter(self):
         subWindow = self.loadUI("table_filter.ui")
@@ -2510,6 +2576,8 @@ class BT(QObject):
         subWindow.setAttribute(Qt.WA_DeleteOnClose)
         subWindow.setWidget(tableView)
         self.mdi_area.addSubWindow(subWindow)
+        systemMenu = subWindow.systemMenu()
+        systemMenu.addAction(self.display_setting)
         subWindow.show()
 
     def _show_plot_sub_window(self, data_frame):
