@@ -240,7 +240,7 @@
                 <enum>Qt::DotLine</enum>
                </property>
                <attribute name="horizontalHeaderVisible">
-                <bool>false</bool>
+                <bool>true</bool>
                </attribute>
                <attribute name="horizontalHeaderCascadingSectionResizes">
                 <bool>false</bool>
@@ -400,7 +400,7 @@
             </property>
             <attribute name="icon">
              <iconset>
-              <normaloff>../icon/locked.png</normaloff>../icon/locked.png</iconset>
+              <normaloff>../icon/sheets.png</normaloff>../icon/sheets.png</iconset>
             </attribute>
             <attribute name="label">
              <string>期货数据</string>
@@ -408,21 +408,60 @@
             <layout class="QHBoxLayout" name="horizontalLayout_4">
              <item>
               <widget class="QTableWidget" name="future_table_view">
+               <property name="selectionBehavior">
+                <enum>QAbstractItemView::SelectRows</enum>
+               </property>
+               <property name="textElideMode">
+                <enum>Qt::ElideRight</enum>
+               </property>
+               <property name="verticalScrollMode">
+                <enum>QAbstractItemView::ScrollPerItem</enum>
+               </property>
+               <property name="showGrid">
+                <bool>false</bool>
+               </property>
                <attribute name="horizontalHeaderVisible">
                 <bool>false</bool>
                </attribute>
                <attribute name="horizontalHeaderCascadingSectionResizes">
                 <bool>false</bool>
                </attribute>
+               <attribute name="horizontalHeaderHighlightSections">
+                <bool>true</bool>
+               </attribute>
                <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
                 <bool>false</bool>
                </attribute>
                <attribute name="horizontalHeaderStretchLastSection">
-                <bool>true</bool>
+                <bool>false</bool>
                </attribute>
                <attribute name="verticalHeaderVisible">
                 <bool>false</bool>
                </attribute>
+               <attribute name="verticalHeaderHighlightSections">
+                <bool>false</bool>
+               </attribute>
+               <attribute name="verticalHeaderShowSortIndicator" stdset="0">
+                <bool>false</bool>
+               </attribute>
+               <attribute name="verticalHeaderStretchLastSection">
+                <bool>false</bool>
+               </attribute>
+               <row>
+                <property name="text">
+                 <string>1</string>
+                </property>
+               </row>
+               <row>
+                <property name="text">
+                 <string>2</string>
+                </property>
+               </row>
+               <row>
+                <property name="text">
+                 <string>3</string>
+                </property>
+               </row>
                <column>
                 <property name="text">
                  <string>期货名称</string>
@@ -433,6 +472,83 @@
                  <string>期货代码</string>
                 </property>
                </column>
+               <column>
+                <property name="text">
+                 <string>合约类型</string>
+                </property>
+               </column>
+               <item row="0" column="0">
+                <property name="text">
+                 <string>铜</string>
+                </property>
+                <property name="textAlignment">
+                 <set>AlignTrailing|AlignVCenter</set>
+                </property>
+               </item>
+               <item row="0" column="1">
+                <property name="text">
+                 <string>CU</string>
+                </property>
+                <property name="textAlignment">
+                 <set>AlignTrailing|AlignVCenter</set>
+                </property>
+               </item>
+               <item row="0" column="2">
+                <property name="text">
+                 <string>主力连续</string>
+                </property>
+                <property name="textAlignment">
+                 <set>AlignTrailing|AlignVCenter</set>
+                </property>
+               </item>
+               <item row="1" column="0">
+                <property name="text">
+                 <string>豆粕</string>
+                </property>
+                <property name="textAlignment">
+                 <set>AlignTrailing|AlignVCenter</set>
+                </property>
+               </item>
+               <item row="1" column="1">
+                <property name="text">
+                 <string>M</string>
+                </property>
+                <property name="textAlignment">
+                 <set>AlignTrailing|AlignVCenter</set>
+                </property>
+               </item>
+               <item row="1" column="2">
+                <property name="text">
+                 <string>主力连续</string>
+                </property>
+                <property name="textAlignment">
+                 <set>AlignTrailing|AlignVCenter</set>
+                </property>
+               </item>
+               <item row="2" column="0">
+                <property name="text">
+                 <string>白糖</string>
+                </property>
+                <property name="textAlignment">
+                 <set>AlignTrailing|AlignVCenter</set>
+                </property>
+               </item>
+               <item row="2" column="1">
+                <property name="text">
+                 <string>SR</string>
+                </property>
+                <property name="textAlignment">
+                 <set>AlignTrailing|AlignVCenter</set>
+                </property>
+               </item>
+               <item row="2" column="2">
+                <property name="text">
+                 <string>主力连续</string>
+                </property>
+                <property name="textAlignment">
+                 <set>AlignTrailing|AlignVCenter</set>
+                </property>
+               </item>
               </widget>
              </item>
             </layout>
@@ -539,7 +655,7 @@
        </widget>
        <widget class="QWidget" name="tab_2">
         <attribute name="title">
-         <string>回测</string>
+         <string>策略</string>
         </attribute>
         <layout class="QHBoxLayout" name="horizontalLayout_7">
          <item>
@@ -575,7 +691,7 @@
            </column>
            <item>
             <property name="text">
-             <string>策略</string>
+             <string>回测</string>
             </property>
             <property name="whatsThis">
              <string>strategy</string>
@@ -836,7 +952,10 @@
   </action>
   <action name="display_action">
    <property name="text">
-    <string>显示设置</string>
+    <string>属性</string>
+   </property>
+   <property name="toolTip">
+    <string>表格属性</string>
    </property>
   </action>
  </widget>

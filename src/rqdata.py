@@ -5,7 +5,7 @@ import os
 os.chdir("../")
 from src import sql
 import datetime
-sql.encryption("123")
+sql.encryption("123qwe!@#QWE")
 rq.init()
 
 
@@ -62,13 +62,17 @@ def is_option_contract_need_update(table):
         return False
 
 def is_future_contract_need_update(table):
-    order_book_id = table.split("/")[-1]
-    maturity_date_string = sql.read("future/contract", where="order_book_id='%s'" % order_book_id).loc[0, "maturity_date"]
-    maturity_date_datetime = datetime.datetime(year=int(maturity_date_string[0:4]), month=int(maturity_date_string[5:7]), day=int(maturity_date_string[8:10]))
-    if maturity_date_datetime < TODAY:
+    df = sql.read_latest_row(table)
+    if df.empty:
         return False
-    else:
+    last_date = df.loc[0, "date"]
+    last_date_datetime = datetime.datetime(year=int(last_date[0:4]), month=int(last_date[5:7]),
+                                           day=int(last_date[8:10]))
+    start_date_string = (last_date_datetime + DELTA).strftime('%Y%m%d')
+    if TODAY > last_date_datetime:
         return True
+    else:
+        return False
 
 def get_started_date(table):
     df = sql.read_latest_row(table)
@@ -90,6 +94,25 @@ def update_stock():
 def update_future():
     all_instruments = rq.all_instruments(type="Future")
     sql.insert(all_instruments, "future/contract", "replace")
+    futures = ["CU", "M", "SR"]
+    for i in futures:
+        data = all_instruments[all_instruments.underlying_symbol == i]
+        data = data[data.symbol.str.contains("主力连续")]
+        ids = data.order_book_id
+        for id in ids:
+            print(u"正在更新期货合约：%s 日线数据" % id)
+            table = "future/contracts/%s" % id
+            if sql.is_table(table):
+                if is_future_contract_need_update(table):
+                    start_date_string = get_started_date(table)
+                    df = rq.get_price(id, start_date=start_date_string, end_date=TODAY_STR, frequency='1d')
+                    if not sql.insert(df, table, "append", index=True):
+                        df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
+                        sql.insert(df, table, "replace", index=True)
+            else:
+                df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
+                sql.insert(df, table, "replace", index=True)
+
     return
 
 def update_option():
@@ -135,6 +158,9 @@ if __name__ == "__main__":
     update_stock()
     update_future()
     update_option()
+
+
+
 
 
 

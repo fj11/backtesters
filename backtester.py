@@ -102,6 +102,7 @@ class BT(QObject):
         self.mdi_area = self.window.findChild(QMdiArea, "display_mdiArea")
         self.show_contract = self.window.findChild(QToolBox, "show_contract")
         self.option_list = self.window.findChild(QTableView, "option_table_view")
+        self.future_list = self.window.findChild(QTableView, "future_table_view")
         self.backtest_tree = self.window.findChild(QTreeWidget, "backtest_tree")
         self.action_function = self.window.findChild(QAction, "actionfunction")
         self.action_signal = self.window.findChild(QAction, "action_signal")
@@ -116,7 +117,6 @@ class BT(QObject):
         self.add_option_underlying = self.window.findChild(QAction, "action_add_option_underlying")
         self.add_option_group = self.window.findChild(QAction, "action_add_option_group")
         self.add_option_contract = self.window.findChild(QAction, "action_add_option_contract")
-        self.display_setting = self.window.findChild(QAction, "display_action")
         self.delete_backtest_tree_item = self.window.findChild(QAction, "action_delete")
         self.filter = self.window.findChild(QAction, "action_filter")
 
@@ -148,6 +148,7 @@ class BT(QObject):
     def connectSignal(self):
 
         self.option_list.itemDoubleClicked.connect(self.onOptionListDoubleClicked)
+        self.future_list.itemDoubleClicked.connect(self.onFutureListDoubleClicked)
         self.action_function.triggered.connect(self.onActionFunction)
         self.action_signal.triggered.connect(self.onActionSignal)
         self.action_msignal.triggered.connect(self.onActionMSignal)
@@ -163,9 +164,11 @@ class BT(QObject):
         self.add_option_group.triggered.connect(self.onAddOptionGroup)
         self.add_option_contract.triggered.connect(self.onAddOptionContract)
         self.delete_backtest_tree_item.triggered.connect(self.onDeleteBackTestTreeItem)
-        self.display_setting.triggered.connect(self.onDisplay)
         #self.filter.triggered.connect(self.onFilter)
         self.mdi_area.subWindowActivated.connect(self.onSubWindoActivated)
+
+        display_setting = self.window.findChild(QAction, "display_action")
+        display_setting.triggered.connect(self.onDisplay)
 
         self._connectBackTestOptionSignal()
 
@@ -261,7 +264,11 @@ class BT(QObject):
 
             signal_list = sub_window_widget.findChild(QComboBox, "signal_list")
             #signal_list.setCurrentIndex(current_node["signal"]["value"])
-            _sub_window = self.__getSubWindowByAttribute("btId", current_node["id"]["list"][0])
+            ids = current_node["id"]["list"]
+            if ids == []:
+                self.messageBox("没有数据")
+                return
+            _sub_window = self.__getSubWindowByAttribute("btId", ids[0])
             if _sub_window is None:
                 self.messageBox("没有找到标的")
                 return
@@ -700,7 +707,7 @@ class BT(QObject):
                     groups = underlying.get("groups")
                     for group in groups:
                         if group.get("name") == current_item_text:
-                            del group
+                            groups.remove(group)
         elif whats_this == "option_contract":
             #两种情况需要处理
             if parent_whats_this == "option_underlying":
@@ -709,7 +716,7 @@ class BT(QObject):
                         contracts = underlying.get("contracts")
                         for contract in contracts:
                             if contract.get("name") == current_item_text:
-                                del contract
+                                contracts.remove(contract)
             elif parent_whats_this == "option_group":
                 for underlying in self.config["options"]["underlyings"]:
                     if underlying.get("name") == grand_parent_item.text(0):
@@ -719,11 +726,12 @@ class BT(QObject):
                                 contracts = group.get("contracts")
                                 for contract in contracts:
                                     if contract.get("name") == current_item_text:
-                                        del contract
+                                        contracts.remove(contract)
         elif whats_this == "option_underlying":
-            for underlying in self.config["options"]["underlyings"]:
+            underlyings = self.config["options"]["underlyings"]
+            for underlying in underlyings:
                 if underlying.get("name") == current_item_text:
-                    del underlying
+                    underlyings.remove(underlying)
         parent_item.takeChild(index)
         return
 
@@ -1817,6 +1825,7 @@ class BT(QObject):
             self.messageBox("请先打开数据")
             return
         self.data = getattr(current_window, "btData")
+        hidden_columns = getattr(current_window, "hidden_columns")
         loader = QUiLoader()
         self.signal = loader.load('signal_dialog.ui', parentWidget=self.window)
         self.signal.setWindowTitle("函数信号")
@@ -1834,7 +1843,7 @@ class BT(QObject):
         self.button_box.accepted.connect(self.onSignalAccept)
         self.button_box.rejected.connect(self.onSignalReject)
 
-        self.list_items = list(self.data.columns)
+        self.list_items = [i for i in list(self.data.columns) if i not in hidden_columns]
         for item in self.list_items:
             self.open_signal_list1.addItem(item)
             self.close_signal_list1.addItem(item)
@@ -1904,10 +1913,15 @@ class BT(QObject):
         order_type_text = item.text(5)
         volume = item.text(6)
 
+
+
         self.manual_create_order.findChild(QDateEdit, "send_date").setDate(QtCore.QDate.fromString(send_date_text, "yyyy-MM-dd 00:00:00"))
         self.manual_create_order.findChild(QComboBox, "order_type").setCurrentText(order_type_text)
         self.manual_create_order.findChild(QComboBox, "underlying_id").setCurrentText(underlying_id_text)
-        self.manual_create_order.findChild(QComboBox, "contract_id").setCurrentText(contract_id_text)
+        if contract_id_text:
+            contract_id = self.manual_create_order.findChild(QComboBox, "contract_id")
+            ids = getattr(contract_id, "ids")
+            contract_id.setCurrentIndex(ids.index(contract_id_text))
         self.manual_create_order.findChild(QComboBox, "position_effect").setCurrentText(position_effect_text)
         self.manual_create_order.findChild(QComboBox, "side").setCurrentText(side_text)
         self.manual_create_order.findChild(QSpinBox, "volume").setValue(int(volume))
@@ -1929,7 +1943,10 @@ class BT(QObject):
         item.setText(0, send_date.dateTime().toString("yyyy-MM-dd 00:00:00"))
         item.setText(1, underlying_id.currentText())
         if order_type.currentIndex() == 0:
-            item.setText(2, contract_id.currentText())
+            if hasattr(contract_id, "ids"):
+                ids = getattr(contract_id, "ids")
+                contract_symbol_index = contract_id.currentIndex()
+                item.setText(2, ids[contract_symbol_index])
         item.setText(3, position_effect.currentText())
         item.setText(4, side.currentText())
         item.setText(5, order_type.currentText())
@@ -1958,8 +1975,11 @@ class BT(QObject):
             date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
             contract_id.clear()
             table = "option/contract"
-            ids = sql.read(table, where="underlying_symbol='%s' AND maturity_date>='%s' AND listed_date <= '%s' " % (text, date, date)).order_book_id
-            contract_id.addItems(list(ids))
+            data = sql.read(table, where="underlying_symbol='%s' AND maturity_date>='%s' AND listed_date <= '%s' " % (text, date, date))
+            ids = list(data.order_book_id)
+            symbols = list(data.symbol)
+            contract_id.addItems(symbols)
+            setattr(contract_id, "ids", ids)
 
     def onManualSignalCalendarClicked(self, date):
 
@@ -1978,28 +1998,33 @@ class BT(QObject):
             self.messageBox("请先打开数据")
             return
         self.data = getattr(current_window, "btData")
+        hidden_columns = getattr(current_window, "hidden_columns")
+        data = self.data
         loader = QUiLoader()
-        self.function = loader.load('function_dialog.ui', parentWidget=self.window)
-        self.function.setWindowTitle("函数计算")
-        self.function_tab = self.function.findChild(QTabWidget, "function_tab")
-        self.input = self.function.findChild(QLineEdit, "column_name")
+        function_ui = loader.load('function_dialog.ui', parentWidget=self.window)
+        function_ui.setWindowTitle("函数计算")
+        function_tab = function_ui.findChild(QTabWidget, "function_tab")
+        input = function_ui.findChild(QLineEdit, "column_name")
+        button_box = function_ui.findChild(QDialogButtonBox, "buttonBox")
 
-        self.button_box = self.function.findChild(QDialogButtonBox, "buttonBox")
-        self.input.textEdited.connect(self.onFunctionInput)
+        input.textEdited.connect(lambda: self.onFunctionInput(function_ui))
+        button_box.accepted.connect(lambda: self.onFunctionAccept(function_ui, data))
+        button_box.rejected.connect(self.onFunctionReject)
 
-        self.button_box.accepted.connect(self.onFunctionAccept)
-        self.button_box.rejected.connect(self.onFunctionReject)
-        self.function_tab.currentChanged.connect(self.onLoadFunctionDialogTab)
-        self.button_box.setEnabled(False)
-        self.onLoadFunctionDialogTab(0)
-        self.function.show()
+        "lambda event: self.onTableViewColumnDoubleClicked(event, None)"
 
-    def onLoadFunctionDialogTab(self, index):
+        function_tab.currentChanged.connect(lambda event: self.onLoadFunctionDialogTab(event, function_ui, data, hidden_columns))
+        #self.function_tab.currentChanged.connect(self.onLoadFunctionDialogTab)
+        button_box.setEnabled(False)
+        self.onLoadFunctionDialogTab(0, function_ui, data, hidden_columns)
+        function_ui.show()
+
+    def onLoadFunctionDialogTab(self, index, function_ui, data, hidden_columns):
         if index == 0:
-            self.cal_list1 = self.function.findChild(QListWidget, "cal_list1")
-            self.cal_list2 = self.function.findChild(QListWidget, "cal_list2")
-            self.function_box = self.function.findChild(QComboBox, "function_box")
-            self.list_items = list(self.data.columns)
+            self.cal_list1 = function_ui.findChild(QListWidget, "cal_list1")
+            self.cal_list2 = function_ui.findChild(QListWidget, "cal_list2")
+            self.function_box = function_ui.findChild(QComboBox, "function_box")
+            self.list_items = [i for i in list(data.columns) if i not in hidden_columns]
             self.cal_list1.clear()
             self.cal_list2.clear()
             for item in self.list_items:
@@ -2008,10 +2033,10 @@ class BT(QObject):
                 self.cal_list2.addItem(item)
             self.function_box.currentIndexChanged.connect(self.onFunctionCalculateBox)
         elif index == 1:
-            self.rel_list1 = self.function.findChild(QListWidget, "rel_list1")
-            self.rel_list2 = self.function.findChild(QListWidget, "rel_list2")
-            self.function_box = self.function.findChild(QComboBox, "rel_box")
-            self.list_items = list(self.data.columns)
+            self.rel_list1 = function_ui.findChild(QListWidget, "rel_list1")
+            self.rel_list2 = function_ui.findChild(QListWidget, "rel_list2")
+            self.function_box = function_ui.findChild(QComboBox, "rel_box")
+            self.list_items = [i for i in list(data.columns) if i not in hidden_columns]
             self.rel_list1.clear()
             self.rel_list2.clear()
             for item in self.list_items:
@@ -2020,8 +2045,8 @@ class BT(QObject):
                 self.rel_list2.addItem(item)
             self.function_box.currentIndexChanged.connect(self.onFunctionCalculateBox)
         elif index == 2:
-            self.search_tec_function = self.function.findChild(QLineEdit, "search_input")
-            self.tec_tree = self.function.findChild(QTreeWidget, "tec_tree")
+            self.search_tec_function = function_ui.findChild(QLineEdit, "search_input")
+            self.tec_tree = function_ui.findChild(QTreeWidget, "tec_tree")
             talib_groups = talib.get_function_groups()
 
             for key in talib_groups.keys():
@@ -2031,14 +2056,14 @@ class BT(QObject):
                     sub_node = QTreeWidgetItem(node)
                     sub_node.setText(0, value)
 
-            self.tec_tree.itemClicked.connect(self.onFunctionTecTree)
-            self.search_tec_function.textEdited.connect(self.onFunctionInput)
+            self.tec_tree.itemClicked.connect(lambda event1, event2: self.onFunctionTecTree(event1, event2, function_ui))
+            #self.search_tec_function.textEdited.connect(self.onFunctionInput)
 
     def onTecFunctionSearched(self):
         text = self.search_tec_function.text().strip()
 
-    def onFunctionTecTree(self, item, column):
-        group_box = self.function.findChild(QGroupBox, "parameter_box")
+    def onFunctionTecTree(self, item, column, function_ui):
+        group_box = function_ui.findChild(QGroupBox, "parameter_box")
         labels = group_box.findChildren(QLabel)
         spin_boxs = group_box.findChildren(QSpinBox)
         for label in labels:
@@ -2070,11 +2095,13 @@ class BT(QObject):
             spin_box.show()
             num += 1
 
-    def onFunctionInput(self):
-        if self.input.text().strip():
-            self.button_box.setEnabled(True)
+    def onFunctionInput(self, function_ui):
+        input = function_ui.findChild(QLineEdit, "column_name")
+        button_box = function_ui.findChild(QDialogButtonBox, "buttonBox")
+        if input.text().strip():
+            button_box.setEnabled(True)
         else:
-            self.button_box.setEnabled(False)
+            button_box.setEnabled(False)
 
     def onFunctionCalculateBox(self, index):
         self.cal_list2.clear()
@@ -2082,16 +2109,19 @@ class BT(QObject):
             for item in self.list_items:
                 self.cal_list2.addItem(item)
 
-    def onFunctionAccept(self):
+    def onFunctionAccept(self, function_ui, data):
         df = []
-        column_name = self.input.text()
-        current_tab_index = self.function_tab.currentIndex()
+        function_tab = function_ui.findChild(QTabWidget, "function_tab")
+        input = function_ui.findChild(QLineEdit, "column_name")
+        column_name = input.text()
+        current_tab_index = function_tab.currentIndex()
+
         text = self.function_box.currentText()
         if current_tab_index == 0:
-            list1_row_number = self.cal_list1.currentRow()
-            list2_row_number = self.cal_list2.currentRow()
-            col1 = self.data.loc[:, self.data.columns[list1_row_number]]
-            col2 = self.data.loc[:, self.data.columns[list2_row_number]]
+            list1_row_text = self.cal_list1.currentItem().text()
+            list2_row_text = self.cal_list2.currentItem().text()
+            col1 = data.loc[:, list1_row_text]
+            col2 = data.loc[:, list2_row_text]
             if text == u"求和":
                 df = col1 + col2
             elif text == u"求差":
@@ -2118,12 +2148,12 @@ class BT(QObject):
                 df = np.exp(col2)
             elif text == u"开平方":
                 df = np.sqrt(col2)
-            self.data[column_name] = df
+            data[column_name] = df
         elif current_tab_index == 1:
-            list1_row_number = self.rel_list1.currentRow()
-            list2_row_number = self.rel_list2.currentRow()
-            col1 = self.data.loc[:, self.data.columns[list1_row_number]]
-            col2 = self.data.loc[:, self.data.columns[list2_row_number]]
+            list1_row_text = self.cal_list1.currentItem().text()
+            list2_row_text = self.cal_list2.currentItem().text()
+            col1 = data.loc[:, list1_row_text]
+            col2 = data.loc[:, list2_row_text]
             if text == u"上穿":
                 try:
                     relation_signal = np.where((col1 > col2) & (col1.shift() < col2.shift()), 1, 0)
@@ -2154,7 +2184,7 @@ class BT(QObject):
                 relation_signal = np.where((col2 ^ 1), 1, 0)
             else:
                 relation_signal = 0
-            self.data[column_name] = relation_signal
+            data[column_name] = relation_signal
         elif current_tab_index == 2:
             function_name = self.tec_tree.currentItem().text(0)
 
@@ -2163,14 +2193,14 @@ class BT(QObject):
                 return
             tech_indicator = talib.abstract.Function(function_name.lower())
             output_names = tech_indicator.output_names
-            group_box = self.function.findChild(QGroupBox, "parameter_box")
+            group_box = function_ui.findChild(QGroupBox, "parameter_box")
             spin_boxs = group_box.findChildren(QSpinBox)
 
-            data_arrays = {"close": self.data.get("close", []),
-                           "open": self.data.get("open", []),
-                           "high": self.data.get("high", []),
-                           "low": self.data.get("low", []),
-                           "volume": self.data.get("volume", [])}
+            data_arrays = {"close": data.get("close", []),
+                           "open": data.get("open", []),
+                           "high": data.get("high", []),
+                           "low": data.get("low", []),
+                           "volume": data.get("volume", [])}
             tech_indicator.set_input_arrays(data_arrays)
 
             parameters = {}
@@ -2185,13 +2215,13 @@ class BT(QObject):
             tech_indicator.set_parameters(parameters)
             data_frame = tech_indicator.run()
             if len(output_names) == 1:
-                self.data[column_name] = data_frame
+                data[column_name] = data_frame
             else:
                 for i in range(len(output_names)):
                     output_name = output_names[i]
-                    self.data[output_name] = data_frame[i]
+                    data[output_name] = data_frame[i]
 
-        self.__display_table(self.data)
+        self.__display_table(data)
 
     def onFunctionReject(self):
         delattr(self, "cal_list1")
@@ -2271,6 +2301,8 @@ class BT(QObject):
             self._get_option_underlying_data(column_value, column_value)
         elif type == "option_contract_table":
             self._get_option_contract_by_date(id, tableName)
+        elif type == "future_contract_table":
+            self._get_future_contract_data(column_value, column_value)
 
         return
 
@@ -2308,6 +2340,12 @@ class BT(QObject):
             self._get_option_underlying_data(name, id)
         elif type == "期货":
             self._get_option_contract(name, id)
+
+    def onFutureListDoubleClicked(self):
+        row = self.future_list.currentRow()
+        name = self.future_list.item(row, 0).text()
+        id = self.future_list.item(row, 1).text()
+        self._get_future_contract(name, id)
 
     def initBacktestAccountTable(self, widget, filename):
         file_name = os.path.normpath(   os.path.join(ROOT, "accounts", "%s.bt" % filename))
@@ -2401,6 +2439,46 @@ class BT(QObject):
                                     type="option_underlying"
                                     )
 
+    def _get_future_contract(self, name, id):
+        table = "future/contract"
+        data = sql.read(table, where="underlying_symbol='%s' AND symbol LIKE '%%主力连续'" % id)
+        hidden_columns = [
+            'index',
+            'contract_multiplier',
+            'de_listed_date',
+            'exchange',
+            'listed_date',
+            'margin_rate',
+            'market_tplus',
+            'maturity_date',
+            'order_book_id',
+            'round_lot',
+            'trading_hours',
+            'underlying_order_book_id',
+                          ]
+        data.dropna(axis=0, how='any', inplace=True)
+        #data.drop_duplicates("underlying_order_book_id", inplace=True)
+        data.index = [i for i in range(int(len(data.index)))]
+        self._show_table_sub_window(name, data, id=id,
+                                    hidden_columns=hidden_columns,
+                                    childSubWindow={
+                                        "title": id,
+                                        "type": "future_contract_table",
+                                        "table_name": "future/contracts/%order_book_id%",
+                                        "hidden_columns": ['total_turnover',
+                                                           'limit_up',
+                                                           'limit_down',
+                                                           'settlement',
+                                                           'prev_settlement',
+                                                           'discount_rate',
+                                                           'acc_net_value',
+                                                           'unit_net_value',
+                                                           'date',
+                                                           'open_interest'],
+                                        "index_column": "date",
+                                    })
+        return
+
     def _get_option_contract(self, name, id):
         table = "option/contract"
         data = sql.read(table, where="underlying_symbol='%s'" % id)
@@ -2453,6 +2531,37 @@ class BT(QObject):
                 dataRow["symbol"] = symbol
                 showData = showData.append(dataRow, ignore_index=True, sort=True)
         self._show_table_sub_window("标的%s在%s日的期权全部合约" % (underlying_symbol, date), showData, index_column="symbol", hidden_columns=["symbol"], id=1)
+
+    def _get_future_contract_data(self, name, id):
+        table = "future/contracts/%s" % id
+        childSubWindow = {
+            "title": "%s的当日合约",
+            "type": "future_contract_data_table",
+            "table_name": "%date%",
+            "where": "",
+            "select": id,
+            "hidden_columns": [],
+            "index_column": [],
+            "childSubWindow": {},
+        }
+        hidden_columns = ['total_turnover',
+                          'limit_up',
+                          'limit_down',
+                          'settlement',
+                          'prev_settlement',
+                          'discount_rate',
+                          'acc_net_value',
+                          'unit_net_value',
+                          'date',
+                          'open_interest'
+                          ]
+        data = sql.read(table)
+        self._show_table_sub_window(name, data, id=id,
+                                    hidden_columns=hidden_columns,
+                                    index_column='date',
+                                    childSubWindow=childSubWindow,
+                                    type="option_underlying"
+                                    )
 
     def _show_list_sub_window(self, title, data):
         if data.empty:
@@ -2573,11 +2682,15 @@ class BT(QObject):
                     index = columns_list.index(i)
                     tableView.setColumnHidden(index, True)
 
+        systemMenu = subWindow.systemMenu()
+        last_action = systemMenu.actions()[-1]
+        display_setting = self.window.findChild(QAction, "display_action")
+        systemMenu.insertAction(last_action, display_setting)
+
         subWindow.setAttribute(Qt.WA_DeleteOnClose)
         subWindow.setWidget(tableView)
         self.mdi_area.addSubWindow(subWindow)
-        systemMenu = subWindow.systemMenu()
-        systemMenu.addAction(self.display_setting)
+
         subWindow.show()
 
     def _show_plot_sub_window(self, data_frame):

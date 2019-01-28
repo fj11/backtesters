@@ -21,7 +21,7 @@ pd.set_option('display.max_columns', None)
 
 def encryption(key):
     c = SQL.cursor()
-    print(c.execute("PRAGMA key='%s'" % key))
+    c.execute("PRAGMA key='%s'" % key)
 
 def read(table_name, select="*", where=""):
     try:
@@ -71,9 +71,9 @@ def list_tables():
     return [i[0] for i in tables]
 
 if __name__ == "__main__":
-    encryption("123")
-    print(help(SQL))
-    print(list_tables())
+    # encryption("fengjian")
+    # print(help(SQL))
+    # print(list_tables())
     # print read("/stock/XSHG/600009/daily/bar", where="tradeDate='1998-02-18'")
     #encryption("fengjian1114")
     # for name, group in read("option/contract").groupby(["underlying_order_book_id"]):
@@ -82,10 +82,11 @@ if __name__ == "__main__":
     # print(read("option/underlyings/510050.XSHG", where="date='2016-06-01 00:00:00'"))
     # print(read("option/underlyings/M1803", select="close", where="date='2017-03-15 00:00:00'").at[0, "close"])
     # print(read("option/contracts/10001307"))
-    # d = read("option/contract")
+    # d = read("future/contract", where="underlying_symbol='%s' AND symbol LIKE '%%主力连续'" % "CU")
+    # print(d)
     # print(d[d["order_book_id"]=="10001307"])
     # print(read("option/contract", where="underlying_symbol='M1811'"))
-    # print(read("option/contract", where="maturity_date>='2017-11-20 00:00:00' AND listed_date <= '2017-11-20 00:00:00' AND underlying_symbol='M1811'"))
-    # print read("option/contract").columns
+    #print(read("option/contract", where="maturity_date>='2017-11-20 00:00:00' AND listed_date <= '2017-11-20 00:00:00' AND underlying_symbol='M1811'"))
+    print(read("option/contract").columns)
     # print read("option/contract", where="order_book_id='M1909C3100'").loc[0, "maturity_date"]
     #print list(read("/pool", where="secShortName='%s'" % u"武钢股份").secID)[0
