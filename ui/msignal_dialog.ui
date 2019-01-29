@@ -168,6 +168,9 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="maximum">
+             <double>100000000.000000000000000</double>
+            </property>
            </widget>
           </item>
          </layout>

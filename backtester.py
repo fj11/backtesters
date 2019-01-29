@@ -1862,6 +1862,7 @@ class BT(QObject):
 
         order_type = manual_create_order.findChild(QComboBox, "order_type")
         underlying_id = manual_create_order.findChild(QComboBox, "underlying_id")
+        contract_id = manual_create_order.findChild(QComboBox, "contract_id")
         add_order = manual_create_order.findChild(QPushButton, "add_order")
 
         self.manual_create_order.findChild(QAction, "delete_order").triggered.connect(self.onDeleteOrder)
@@ -1875,8 +1876,9 @@ class BT(QObject):
 
         order_type.currentTextChanged.connect(self.onManualSignalOrderTypeChanged)
         order_type.setCurrentIndex(1)
-        underlying_id.currentTextChanged.connect(self.onManualSignalUnderlyingIdChanged)
 
+        underlying_id.currentTextChanged.connect(self.onManualSignalUnderlyingIdChanged)
+        contract_id.currentTextChanged.connect(self.onManualSignalContractIdChanged)
         calendar.clicked.connect(self.onManualSignalCalendarClicked)
 
         add_order.clicked.connect(self.onAddOrderClicked)
@@ -1913,8 +1915,6 @@ class BT(QObject):
         order_type_text = item.text(5)
         volume = item.text(6)
 
-
-
         self.manual_create_order.findChild(QDateEdit, "send_date").setDate(QtCore.QDate.fromString(send_date_text, "yyyy-MM-dd 00:00:00"))
         self.manual_create_order.findChild(QComboBox, "order_type").setCurrentText(order_type_text)
         self.manual_create_order.findChild(QComboBox, "underlying_id").setCurrentText(underlying_id_text)
@@ -1925,7 +1925,6 @@ class BT(QObject):
         self.manual_create_order.findChild(QComboBox, "position_effect").setCurrentText(position_effect_text)
         self.manual_create_order.findChild(QComboBox, "side").setCurrentText(side_text)
         self.manual_create_order.findChild(QSpinBox, "volume").setValue(int(volume))
-        pass
 
     def onAddOrderClicked(self):
 
@@ -1962,13 +1961,34 @@ class BT(QObject):
             underlying_id.addItems(underlying_ids)
             self.manual_create_order.findChild(QComboBox, "contract_id").setEnabled(True)
         elif text == "期权标的":
-            underlying_ids = []
-            for index in range(self.option_list.rowCount()):
-                underlying_ids.append(self.option_list.item(index, 1).text())
-            self.manual_create_order.findChild(QComboBox, "underlying_id").addItems(underlying_ids)
+            date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
+            table = "option/contract"
+            data = sql.read(table, where="maturity_date>='%s' AND listed_date <= '%s' " % (date, date))
+            ids = [id for id, group in data.groupby(["underlying_order_book_id"])]
+            # underlying_ids = []
+            # for index in range(self.option_list.rowCount()):
+            #     underlying_ids.append(self.option_list.item(index, 1).text())
+            self.manual_create_order.findChild(QComboBox, "underlying_id").addItems(ids)
             self.manual_create_order.findChild(QComboBox, "contract_id").setEnabled(False)
 
+    def onManualSignalContractIdChanged(self, text):
+        contract_id = self.manual_create_order.findChild(QComboBox, "contract_id")
+        if not hasattr(contract_id, "ids"):
+            return
+        ids = getattr(contract_id, "ids")
+        if ids == []:
+            return
+        index = contract_id.currentIndex()
+        text = ids[index]
+        date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
+        table = "option/contracts/%s" % text
+        data = sql.read(table, where="date='%s'" % date)
+        close_price = data.close
+        self.manual_create_order.findChild(QDoubleSpinBox, "close_price").setValue(close_price)
+
     def onManualSignalUnderlyingIdChanged(self, text):
+        if not text:
+            return
         order_type = self.manual_create_order.findChild(QComboBox, "order_type")
         if order_type.currentIndex() == 0:
             contract_id = self.manual_create_order.findChild(QComboBox, "contract_id")
@@ -1980,6 +2000,12 @@ class BT(QObject):
             symbols = list(data.symbol)
             contract_id.addItems(symbols)
             setattr(contract_id, "ids", ids)
+        else:
+            table = "option/underlyings/%s" % text
+            date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
+            data = sql.read(table, where="date='%s'" % date)
+            close_price = data.close
+            self.manual_create_order.findChild(QDoubleSpinBox, "close_price").setValue(close_price)
 
     def onManualSignalCalendarClicked(self, date):
 
@@ -1990,6 +2016,10 @@ class BT(QObject):
             self.messageBox("不是交易日")
             return
         self.manual_create_order.findChild(QDateEdit, "send_date").setDate(date)
+        order_type = self.manual_create_order.findChild(QComboBox, "order_type")
+        text = order_type.currentText()
+        self.onManualSignalOrderTypeChanged(text)
+
 
     def onActionFunction(self):
 
