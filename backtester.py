@@ -3,6 +3,7 @@ import re
 import os
 import sys
 import wmi
+import copy
 import uuid
 import time
 import pickle
@@ -19,7 +20,7 @@ from PySide2.QtWidgets import QApplication, QMdiArea, QTreeWidgetItem, \
     QTableWidget, QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
     QTabWidget, QTreeWidget, QSpinBox, QLabel, QGroupBox, QPushButton, QFileDialog,\
     QMenu, QInputDialog, QDoubleSpinBox, QTableWidgetItem, QDateEdit, QProgressBar, \
-    QToolBar, QCalendarWidget, QWidget, QAbstractButton
+    QToolBar, QCalendarWidget, QWidget, QAbstractButton, QAbstractItemView, QSlider
 from PySide2.QtCore import QFile, QObject, Qt
 from PySide2 import QtGui
 os.environ["QT_API"] = "pyqt5"
@@ -167,14 +168,67 @@ class BT(QObject):
         #self.filter.triggered.connect(self.onFilter)
         self.mdi_area.subWindowActivated.connect(self.onSubWindoActivated)
 
-        display_setting = self.window.findChild(QAction, "display_action")
-        display_setting.triggered.connect(self.onDisplay)
+        self.window.findChild(QAction, "display_action").triggered.connect(self.onDisplay)
+        self.window.findChild(QAction, "action_roll").triggered.connect(self.onRoll)
 
         self._connectBackTestOptionSignal()
 
     def _connectBackTestOptionSignal(self):
 
         self.backtest_tree.customContextMenuRequested.connect(self.onBackTestTreeRightClicked)
+
+    def onRoll(self):
+        current_window = self.mdi_area.currentSubWindow()
+        table_view = current_window.findChild(QTableView)
+        selectedColumns = [selection.column() for selection in table_view.selectionModel().selectedColumns()]
+        if not selectedColumns:
+            self.messageBox("请选择需要滚动的列")
+            return
+        if len(selectedColumns) > 1:
+            self.messageBox("不支持多列数据滚动")
+            return
+        data = getattr(current_window, "btData")
+        hidden_columns = getattr(current_window, "hidden_columns")
+        column_index = len(data.index)
+        columns = list(data.columns)
+        column_name = columns[selectedColumns[0]]
+        column = data.iloc[:, selectedColumns]
+        roll_widget = self.loadUI("roll.ui", parentWidget=self.window)
+        volume = roll_widget.findChild(QSpinBox)
+        table = roll_widget.findChild(QTableView)
+        slider = roll_widget.findChild(QSlider)
+        button_box = roll_widget.findChild(QDialogButtonBox)
+
+        volume.setRange(column_index * -1, column_index)
+        mode = pandas_mode.PandasModel(column)
+        table.setModel(mode)
+        slider.setMinimum(column_index * -1)
+        slider.setMaximum(column_index)
+
+        volume.valueChanged.connect(lambda event: self.onRollVolumeValueChanged(event, column, table))
+        slider.valueChanged.connect(lambda event: self.onRollSliderValueChanged(event, volume))
+
+        button_box.accepted.connect(lambda: self.onRollAccept(volume, selectedColumns[0], column_name, data, table_view, current_window))
+        #button_box.rejected.connect(self.onRollReject)
+
+        roll_widget.show()
+
+        return
+
+    def onRollVolumeValueChanged(self, value, data, table):
+
+        data = data.shift(value)
+        mode = pandas_mode.PandasModel(data)
+        table.setModel(mode)
+
+    def onRollSliderValueChanged(self, value, volume):
+        volume.setValue(value)
+
+    def onRollAccept(self, volume, column_number, column_name, data, table_view, current_window):
+        number = volume.value()
+        new_column_name = "%s, %s" % (column_name, number)
+        data.insert(column_number + 1, new_column_name, data[column_name].shift(number))
+        self.__display_table(data, current_window)
 
     def onSubWindoActivated(self, subWindow):
         if hasattr(subWindow, "btData") and hasattr(subWindow, "btFilePath"):
@@ -2304,7 +2358,13 @@ class BT(QObject):
     def onActionIndicator(self):
         print(2222222222)
 
-    def onTableViewColumnClicked(self, index):
+    def onTableViewColumnClicked(self, index, table_view):
+        # up = self.window.findChild(QAction, "action_up")
+        # down = self.window.findChild(QAction, "action_down")
+        roll = self.window.findChild(QAction, "action_roll")
+        menu = QMenu(table_view)
+        menu.addAction(roll)
+        menu.popup(QtGui.QCursor.pos())
         return
 
     def onTableViewRowDoubleClicked(self, index):
@@ -2690,10 +2750,11 @@ class BT(QObject):
         #双击cell的信号
         tableView.doubleClicked.connect(self.onTableViewCellDoubleClicked)
 
-        #single click column
-        # tableView.horizontalHeader().sectionDoubleClicked.connect(self.onTableViewColumnClicked)
-        #
-        # tableView.horizontalHeader().customContextMenuRequested.connect(self.onCornerButtonRightClicked)
+        #右键列
+        headers = tableView.horizontalHeader()
+        headers.setContextMenuPolicy(Qt.CustomContextMenu)
+        headers.customContextMenuRequested.connect(lambda event: self.onTableViewColumnClicked(event, tableView))
+        headers.setSelectionMode(QAbstractItemView.SingleSelection)
 
         cornerButton = tableView.findChild(QAbstractButton)
         cornerButton.customContextMenuRequested.connect(self.onCornerButtonRightClicked)
@@ -2705,12 +2766,13 @@ class BT(QObject):
         proxyModel.setSourceModel(mode)
         tableView.setModel(proxyModel)
 
-        columns_list = list(data.columns)
-        if hidden_columns:
-            for i in hidden_columns:
-                if i in columns_list:
-                    index = columns_list.index(i)
-                    tableView.setColumnHidden(index, True)
+        self._hide_columns(tableView, data, hidden_columns)
+        # columns_list = list(data.columns)
+        # if hidden_columns:
+        #     for i in hidden_columns:
+        #         if i in columns_list:
+        #             index = columns_list.index(i)
+        #             tableView.setColumnHidden(index, True)
 
         systemMenu = subWindow.systemMenu()
         last_action = systemMenu.actions()[-1]
@@ -2722,6 +2784,14 @@ class BT(QObject):
         self.mdi_area.addSubWindow(subWindow)
 
         subWindow.show()
+
+    def _hide_columns(self, table_view, data, hidden_columns):
+        columns_list = list(data.columns)
+        if hidden_columns:
+            for i in range(len(columns_list)):
+                name = columns_list[i]
+                if name in hidden_columns:
+                    table_view.setColumnHidden(i, True)
 
     def _show_plot_sub_window(self, data_frame):
         if data_frame.empty:

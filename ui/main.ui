@@ -958,6 +958,21 @@
     <string>表格属性</string>
    </property>
   </action>
+  <action name="action_up">
+   <property name="text">
+    <string>上移</string>
+   </property>
+  </action>
+  <action name="action_down">
+   <property name="text">
+    <string>下移</string>
+   </property>
+  </action>
+  <action name="action_roll">
+   <property name="text">
+    <string>滚动数据</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
