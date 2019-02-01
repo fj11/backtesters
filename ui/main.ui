@@ -394,8 +394,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>274</width>
-              <height>530</height>
+              <width>98</width>
+              <height>89</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -558,8 +558,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>274</width>
-              <height>530</height>
+              <width>98</width>
+              <height>89</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -606,8 +606,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>274</width>
-              <height>530</height>
+              <width>98</width>
+              <height>89</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -971,6 +971,11 @@
   <action name="action_roll">
    <property name="text">
     <string>滚动数据</string>
+   </property>
+  </action>
+  <action name="action_delete_column">
+   <property name="text">
+    <string>删除</string>
    </property>
   </action>
  </widget>

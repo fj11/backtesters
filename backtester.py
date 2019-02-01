@@ -170,12 +170,27 @@ class BT(QObject):
 
         self.window.findChild(QAction, "display_action").triggered.connect(self.onDisplay)
         self.window.findChild(QAction, "action_roll").triggered.connect(self.onRoll)
+        self.window.findChild(QAction, "action_delete_column").triggered.connect(self.onDeleteColumn)
 
         self._connectBackTestOptionSignal()
 
     def _connectBackTestOptionSignal(self):
 
         self.backtest_tree.customContextMenuRequested.connect(self.onBackTestTreeRightClicked)
+
+    def onDeleteColumn(self):
+        current_window = self.mdi_area.currentSubWindow()
+        table_view = current_window.findChild(QTableView)
+        selectedColumns = [selection.column() for selection in table_view.selectionModel().selectedColumns()]
+        if not selectedColumns:
+            self.messageBox("请选择需要删除的列")
+            return
+        data = getattr(current_window, "btData")
+        columns = list(data.columns)
+        for i in selectedColumns:
+            column_name = columns[i]
+            data.drop(column_name, axis=1, inplace=True)
+        self.__display_table(data, current_window)
 
     def onRoll(self):
         current_window = self.mdi_area.currentSubWindow()
@@ -2362,8 +2377,11 @@ class BT(QObject):
         # up = self.window.findChild(QAction, "action_up")
         # down = self.window.findChild(QAction, "action_down")
         roll = self.window.findChild(QAction, "action_roll")
+        delete = self.window.findChild(QAction, "action_delete_column")
+
         menu = QMenu(table_view)
         menu.addAction(roll)
+        menu.addAction(delete)
         menu.popup(QtGui.QCursor.pos())
         return
 
@@ -2767,12 +2785,6 @@ class BT(QObject):
         tableView.setModel(proxyModel)
 
         self._hide_columns(tableView, data, hidden_columns)
-        # columns_list = list(data.columns)
-        # if hidden_columns:
-        #     for i in hidden_columns:
-        #         if i in columns_list:
-        #             index = columns_list.index(i)
-        #             tableView.setColumnHidden(index, True)
 
         systemMenu = subWindow.systemMenu()
         last_action = systemMenu.actions()[-1]

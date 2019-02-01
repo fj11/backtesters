@@ -2,11 +2,20 @@
 
 block_cipher = None
 
+added_files = [
+
+                ('db/bt.db', 'db'),
+                ('icon', 'icon'),
+                ('src/*.py', 'src'),
+                ('ui/*.ui', 'ui'),
+                ('accounts/*.bt', 'account'),
+                ('tmp/*', 'tmp')
+            ]
 
 a = Analysis(['backtester.py'],
              pathex=['C:\\Users\\14387\\PycharmProjects\\backtesters'],
              binaries=[],
-             datas=[],
+             datas=added_files,
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
