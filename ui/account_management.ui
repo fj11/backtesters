@@ -72,6 +72,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="investment">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="decimals">
               <number>3</number>
              </property>
@@ -96,6 +99,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="commission_rate">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="decimals">
               <number>3</number>
              </property>
@@ -120,6 +126,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="option_commission_rate">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="decimals">
               <number>3</number>
              </property>
@@ -144,6 +153,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="slide_point">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="decimals">
               <number>3</number>
              </property>
@@ -165,6 +177,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="stop_profit">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="decimals">
               <number>3</number>
              </property>
@@ -186,6 +201,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="stop_loss">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="decimals">
               <number>3</number>
              </property>

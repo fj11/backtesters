@@ -25,32 +25,9 @@ from PySide2.QtCore import QFile, QObject, Qt
 from PySide2 import QtGui
 os.environ["QT_API"] = "pyqt5"
 
-# from PyQt5.uic import loadUi as QUiLoader
-# from PyQt5 import QtCore, QtWidgets
-# from PyQt5.QtWidgets import QApplication, QMdiArea, QTreeWidgetItem, \
-#     QMessageBox, QMdiSubWindow, QTableView, QToolBox, QFrame, QListView, \
-#     QTableWidget, QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
-#     QTabWidget, QTreeWidget, QSpinBox, QLabel, QGroupBox, QPushButton, QFileDialog,\
-#     QMenu, QInputDialog, QDoubleSpinBox, QTableWidgetItem, QDateEdit, QProgressBar, QToolBar, QCalendarWidget, QWidget
-# from PyQt5.QtCore import QFile, QObject, Qt
-# from PyQt5 import QtGui
-#
-# os.environ["QT_API"] = "pyside2"
+from src import sql, pandas_mode, setting, tradeCenter, dialogs, subWindows
 
-from matplotlib.font_manager import FontProperties
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
-from matplotlib.backends.backend_qt5agg import FigureCanvas
-from matplotlib.figure import Figure
-
-
-import talib
-from talib import abstract
-
-from src import sql, pandas_mode, setting, tradeCenter
-
-font = FontProperties(fname=r"c:\windows\fonts\simsun.ttc", size=14)
 os.chdir("ui")
-
 ROOT = os.path.normpath(os.path.join(os.path.dirname(sys.argv[0])))
 
 def get_disk_id():
@@ -70,13 +47,14 @@ class BT(QObject):
     def __init__(self, ui_file, parent=None):
         super(BT, self).__init__(parent)
 
+        self.root = ROOT
         self.tc = None
         self.orders = {}
         self.positions = {}
         self.cashs = {}
         self.label_text = {}
         self.option_filter_dict = {}
-        self.subplot = False
+
         self.filePath = None
         self.config = setting.SETTINGS
 
@@ -165,7 +143,7 @@ class BT(QObject):
         self.add_option_group.triggered.connect(self.onAddOptionGroup)
         self.add_option_contract.triggered.connect(self.onAddOptionContract)
         self.delete_backtest_tree_item.triggered.connect(self.onDeleteBackTestTreeItem)
-        #self.filter.triggered.connect(self.onFilter)
+        self.filter.triggered.connect(self.onFilter)
         self.mdi_area.subWindowActivated.connect(self.onSubWindoActivated)
 
         self.window.findChild(QAction, "display_action").triggered.connect(self.onDisplay)
@@ -434,16 +412,22 @@ class BT(QObject):
             account_list.addItems(account_files)
             account_list.currentTextChanged.connect(self.onBackTestRunAccountChanged)
 
+            open_type_list = sub_window_widget.findChild(QComboBox, "open_type")
+            open_type_list.currentIndexChanged.connect(self.onBackTestOpenTypeChanged)
+
             table_view = sub_window_widget.findChild(QTableWidget)
             self.initBacktestAccountTable(table_view, account_files[0])
 
         subWindow.show()
 
+    def onBackTestOpenTypeChanged(self, value):
+        self.config["open_type"]["value"] = value
+        return
 
     def _active_backtest_widget(self, bt_type, text):
 
         for i in self.mdi_area.subWindowList():
-            if i.btType==bt_type and i.windowTitle() == text:
+            if hasattr(i, "btType") and i.btType==bt_type and i.windowTitle() == text:
                 self.mdi_area.setActiveSubWindow(i)
                 return True
 
@@ -622,6 +606,7 @@ class BT(QObject):
         return
 
     def onFilter(self):
+
         subWindow = self.loadUI("table_filter.ui")
 
         table_subwindows = [i for i in self.mdi_area.subWindowList() if hasattr(i, "btData") and getattr(i, "btData") is not None]
@@ -1082,7 +1067,8 @@ class BT(QObject):
                         for group in groups:
                             group_contract = group["contracts"]
                             for contract in group_contract:
-                                self.__handleOptionContractTick(id, row, underlying_signal, contract_dataframe, contract)
+                                self.__handleOptionContractTick(id, row, underlying_signal, contract_dataframe, contract, option_underlying_setting=underlying,
+                                                                option_group_setting=group)
             self.updateMarket()
             self.updatePosition(current_date_str)
             self.updateCash(current_date_str)
@@ -1235,9 +1221,9 @@ class BT(QObject):
                 order.sending_time: [(order, response)]
             }
 
-    def buy_option_contract(self, option_underlying_tick, option_contract_tick, option_contract_setting):
+    def buy_option_contract(self, option_underlying_tick, option_contract_tick, option_contract_setting, volume):
         close_method = option_contract_setting["close_method"]["value"]
-        volume = option_contract_setting["volume"]["value"]
+        #volume = option_contract_setting["volume"]["value"]
         deposit_coefficient = option_contract_setting["deposit_coefficient"]["value"]
         change_condition = option_contract_setting["change_condition"]["value"]
         order = setting.Order()
@@ -1262,9 +1248,9 @@ class BT(QObject):
             option_contract_setting["ids"] = [order.sec_id]
         self.__save_order(order, response)
 
-    def short_option_contract(self, option_underlying_tick, option_contract_tick, option_contract_setting):
+    def short_option_contract(self, option_underlying_tick, option_contract_tick, option_contract_setting, volume):
         close_method = option_contract_setting["close_method"]["value"]
-        volume = option_contract_setting["volume"]["value"]
+        #volume = option_contract_setting["volume"]["value"]
         deposit_coefficient = option_contract_setting["deposit_coefficient"]["value"]
         change_condition = option_contract_setting["change_condition"]["value"]
         order = setting.Order()
@@ -1290,9 +1276,9 @@ class BT(QObject):
                 option_contract_setting["ids"] = [order.sec_id]
         self.__save_order(order, response)
 
-    def sell_option_contract(self, option_underlying_tick, option_contract_tick, option_contract_setting):
+    def sell_option_contract(self, option_underlying_tick, option_contract_tick, option_contract_setting, volume):
         close_method = option_contract_setting["close_method"]["value"]
-        volume = option_contract_setting["volume"]["value"]
+        #volume = option_contract_setting["volume"]["value"]
         order = setting.Order()
         order.sec_id = option_contract_tick.order_book_id
         order.order_type = "option_contract"
@@ -1314,9 +1300,9 @@ class BT(QObject):
                 option_contract_setting["ids"].remove(order.sec_id)
         self.__save_order(order, response)
 
-    def cover_option_contract(self, option_underlying_tick, option_contract_tick, option_contract_setting):
+    def cover_option_contract(self, option_underlying_tick, option_contract_tick, option_contract_setting, volume):
         close_method = option_contract_setting["close_method"]["value"]
-        volume = option_contract_setting["volume"]["value"]
+        # volume = option_contract_setting["volume"]["value"]
         order = setting.Order()
         order.sec_id = option_contract_tick.order_book_id
         order.order_type = "option_contract"
@@ -1591,6 +1577,8 @@ class BT(QObject):
         return None
 
     def __handleManualOrder(self, date):
+        if not hasattr(self, "manual_create_order"):
+            return
         order_tree = self.manual_create_order.findChild(QTreeWidget)
         count = order_tree. topLevelItemCount()
         for index in range(count):
@@ -1645,119 +1633,177 @@ class BT(QObject):
                         }
 
                 if position_effect_text == "开仓" and side_text == "买入":
-                    self.buy_option_contract(underlying_tick, contract_tick, contract_setting)
+                    self.buy_option_contract(underlying_tick, contract_tick, contract_setting, volume)
                 if position_effect_text == "平仓" and side_text == "卖出":
-                    self.sell_option_contract(underlying_tick, contract_tick, contract_setting)
+                    self.sell_option_contract(underlying_tick, contract_tick, contract_setting, volume)
 
     def __handleOptionUnderlyingTick(self, id, row, signal, underlying_config):
-        volume = underlying_config["volume"]["value"]
+        open_type = self.config["open_type"]["value"]
         if signal == 1:
             #买入
+            volume = underlying_config["volume"]["value"]
+            if open_type == 0:
+                volume = volume
+            elif open_type == 1:
+                volume = int(volume/row.close)
+            elif open_type == 2:
+                ratio = underlying_config["ratio"]["value"]/100
+                ratio = ratio * (volume/100)
+                volume = int((ratio * self.tc.cash.available / row.close))
+            print(volume)
             self.buy_option_underlying(id, volume, row)
         elif signal == -1:
             #卖出
-            self.sell_option_underlying(id, volume, row)
+            position = self.tc.optionUnderlyingPosition.get(id, None)
+            if position:
+                volume = position.volume
+                self.sell_option_underlying(id, volume, row)
 
     def __handleOptionContractTick(self, id, tick, signal, option_dataframe, option_contract_setting,
                                    option_group_setting={},
                                    option_underlying_setting={},
                                    option_setting={}):
-        # open_type = option_contract_setting["open_type"]["value"]
+        open_type = self.config["open_type"]["value"]
         # close_type = option_contract_setting["close_type"]["value"]
         option_type = option_contract_setting["option_type"]["value"]
         close_method = option_contract_setting["close_method"]["value"]
         option_side = option_contract_setting["option_side"]["value"]
-        option_volume = option_contract_setting["volume"]["value"]
         deposit_coefficient = option_contract_setting["deposit_coefficient"]["value"]
         change_condition = option_contract_setting["change_condition"]["value"]
         change_feq = option_contract_setting["change_feq"]["value"]
         if signal == 1:
+            option_volume = option_contract_setting["volume"]["value"]
             var_price_type = change_condition
             options = self.select_option(tick, option_dataframe, **option_contract_setting)
             for j in options.index:
                 option = options.loc[j]
                 if not change_feq:
                     change_feq = None
-                option_volume = int(option_volume)
-                # if open_type == 0:
-                #     option_volume = int(option_volume)
-                # elif open_type == 1:
-                #     if option_side == 0:
-                #         option_volume = int((float(option_volume)/(option.closePrice*10000)))
-                #     elif option_side == 1:
-                #         _option_volume = 0
-                #         if option_type == 0:
-                #             while self.tc.call_option_cash_deposit(option.strikePrice, tick.closePrice,
-                #     option.settlPrice, abs(_option_volume*10000)) * deposit_coefficient < option_volume:
-                #                 _option_volume += 1
-                #         elif option_type == 1:
-                #             while self.tc.put_option_cash_deposit(option.strikePrice, tick.closePrice,
-                #     option.settlPrice, abs(_option_volume*10000)) * deposit_coefficient < option_volume:
-                #                 _option_volume += 1
-                #         option_volume = _option_volume - 1
-                # elif open_type == 2:
-                #     option_ratio = float(option_underlying_setting["ratio"]["value"])/100
-                #     option_ratio = option_ratio * (float(option_group_setting["ratio"]["value"])/100)
-                #     option_ratio = option_ratio * (float(option_volume)/100)
-                #     if option_side == 0:
-                #         option_volume = int((option_ratio*self.tc.cash.available/(option.closePrice*10000)))
-                #     elif option_side == 1:
-                #         _option_volume = 0
-                #         option_volume = option_ratio*self.tc.cash.available
-                #         if option_type == 0:
-                #             while self.tc.call_option_cash_deposit(option.strikePrice, tick.closePrice,
-                #     option.settlPrice, abs(_option_volume*10000)) * deposit_coefficient < option_volume:
-                #                 _option_volume += 1
-                #         elif option_type == 1:
-                #             while self.tc.put_option_cash_deposit(option.strikePrice,
-                #     tick.closePrice, option.settlPrice, abs(_option_volume*10000)) * deposit_coefficient < option_volume:
-                #                 _option_volume += 1
-                #         option_volume = _option_volume - 1
+                if open_type == 0:
+                    option_volume = int(option_volume)
+                elif open_type == 1:
+                    if option_side == 0:
+                        option_volume = int((float(option_volume)/(option.close*10000)))
+                    elif option_side == 1:
+                        _option_volume = 0
+                        if option_type == 0:
+                            while self.tc.call_option_cash_deposit(option.strike_price, tick.close,
+                    option.settlPrice, abs(_option_volume*10000)) * deposit_coefficient < option_volume:
+                                _option_volume += 1
+                        elif option_type == 1:
+                            while self.tc.put_option_cash_deposit(option.strike_price, tick.close,
+                    option.settlPrice, abs(_option_volume*10000)) * deposit_coefficient < option_volume:
+                                _option_volume += 1
+                        option_volume = _option_volume - 1
+                elif open_type == 2:
+                    option_ratio = float(option_underlying_setting["ratio"]["value"])/100
+                    option_ratio = option_ratio * (float(option_group_setting["ratio"]["value"])/100)
+                    option_ratio = option_ratio * (float(option_volume)/100)
+                    if option_side == 0:
+                        option_volume = int((option_ratio*self.tc.cash.available/(option.close*10000)))
+                    elif option_side == 1:
+                        _option_volume = 0
+                        option_volume = option_ratio*self.tc.cash.available
+                        if option_type == 0:
+                            while self.tc.call_option_cash_deposit(option.strike_price, tick.close,
+                    option.settlPrice, abs(_option_volume*10000)) * deposit_coefficient < option_volume:
+                                _option_volume += 1
+                        elif option_type == 1:
+                            while self.tc.put_option_cash_deposit(option.strike_price,
+                    tick.close, option.settlPrice, abs(_option_volume*10000)) * deposit_coefficient < option_volume:
+                                _option_volume += 1
+                        option_volume = _option_volume - 1
                 option.change_feq = change_feq
-                option_contract_setting["volume"]["value"] = option_volume
+                #option_contract_setting["volume"]["value"] = option_volume
                 if option_side == 0:
-                    self.buy_option_contract(tick, option, option_contract_setting)
+                    self.buy_option_contract(tick, option, option_contract_setting, option_volume)
                 elif option_side == 1:
-                    self.short_option_contract(tick, option, option_contract_setting)
+                    self.short_option_contract(tick, option, option_contract_setting, option_volume)
         elif signal == -1:
             for id in option_contract_setting["ids"]:
-                tick_table = "option/contracts/%s" % id
-                contract_table = "option/contract"
-                contract_dataframe = sql.read(contract_table, where="order_book_id='%s'" % id)
-                option_tick = sql.read(tick_table, where="date='%s'" % tick.date)
-                option_tick["order_book_id"] = id
-                option = contract_dataframe.merge(option_tick, on="order_book_id", how="inner")
-                option = option.T.squeeze()
-                if option_side == 0:
-                    self.sell_option_contract(tick, option, option_contract_setting)
-                elif option_side == 1:
-                    self.cover_option_contract(tick, option, option_contract_setting)
+                position = self.tc.optionContractPosition[id, None]
+                volume = position.volume
+                if position:
+                    tick_table = "option/contracts/%s" % id
+                    contract_table = "option/contract"
+                    contract_dataframe = sql.read(contract_table, where="order_book_id='%s'" % id)
+                    option_tick = sql.read(tick_table, where="date='%s'" % tick.date)
+                    option_tick["order_book_id"] = id
+                    option = contract_dataframe.merge(option_tick, on="order_book_id", how="inner")
+                    option = option.T.squeeze()
+                    if option_side == 0:
+                        self.sell_option_contract(tick, option, option_contract_setting, volume)
+                    elif option_side == 1:
+                        self.cover_option_contract(tick, option, option_contract_setting, volume)
         elif signal == 0:
             for id in option_contract_setting["ids"]:
                 contract_dataframe = option_dataframe[option_dataframe["order_book_id"] == id]
                 contract_dataframe = contract_dataframe.T.squeeze()
                 if tick.date[:10] == contract_dataframe.maturity_date:
-
+                    position = self.tc.optionContractPosition[id, None]
                     tick_table = "option/contracts/%s" % id
                     option_tick = sql.read(tick_table, where="date='%s'" % tick.date)
                     option_tick = option_tick.T.squeeze()
                     option = contract_dataframe.append(option_tick)
                     if close_method == 0:
                         # 按照交易信号平仓，需要换仓
+
+                        volume = position.volume
                         if option_side == 0:
-                            self.sell_option_contract(tick, option, option_contract_setting)
+                            self.sell_option_contract(tick, option, option_contract_setting, volume)
                         elif option_side == 1:
-                            self.cover_option_contract(tick, option, option_contract_setting)
+                            self.cover_option_contract(tick, option, option_contract_setting, volume)
+
                         options = self.select_option(tick, option_dataframe, **option_contract_setting)
+                        option_volume = option_contract_setting["volume"]["value"]
                         for j in options.index:
                             option = options.loc[j]
                             if not change_feq:
                                 change_feq = None
+                            if open_type == 0:
+                                option_volume = int(option_volume)
+                            elif open_type == 1:
+                                if option_side == 0:
+                                    option_volume = int((float(option_volume) / (option.close * 10000)))
+                                elif option_side == 1:
+                                    _option_volume = 0
+                                    if option_type == 0:
+                                        while self.tc.call_option_cash_deposit(option.strike_price, tick.close,
+                                                                               option.settlPrice, abs(
+                                                    _option_volume * 10000)) * deposit_coefficient < option_volume:
+                                            _option_volume += 1
+                                    elif option_type == 1:
+                                        while self.tc.put_option_cash_deposit(option.strike_price, tick.close,
+                                                                              option.settlPrice, abs(
+                                                    _option_volume * 10000)) * deposit_coefficient < option_volume:
+                                            _option_volume += 1
+                                    option_volume = _option_volume - 1
+                            elif open_type == 2:
+                                option_ratio = float(option_underlying_setting["ratio"]["value"]) / 100
+                                option_ratio = option_ratio * (float(option_group_setting["ratio"]["value"]) / 100)
+                                option_ratio = option_ratio * (float(option_volume) / 100)
+                                if option_side == 0:
+                                    option_volume = int(
+                                        (option_ratio * self.tc.cash.available / (option.close * 10000)))
+                                elif option_side == 1:
+                                    _option_volume = 0
+                                    option_volume = option_ratio * self.tc.cash.available
+                                    if option_type == 0:
+                                        while self.tc.call_option_cash_deposit(option.strike_price, tick.close,
+                                                                               option.settlPrice, abs(
+                                                    _option_volume * 10000)) * deposit_coefficient < option_volume:
+                                            _option_volume += 1
+                                    elif option_type == 1:
+                                        while self.tc.put_option_cash_deposit(option.strike_price,
+                                                                              tick.close, option.settlPrice, abs(
+                                                    _option_volume * 10000)) * deposit_coefficient < option_volume:
+                                            _option_volume += 1
+                                    option_volume = _option_volume - 1
                             option.change_feq = change_feq
                             if option_side == 0:
-                                self.buy_option_contract(tick, option, option_contract_setting)
+                                self.buy_option_contract(tick, option, option_contract_setting, option_volume)
                             elif option_side == 1:
-                                self.short_option_contract(tick, option, option_contract_setting)
+                                self.short_option_contract(tick, option, option_contract_setting, option_volume)
                             #TODO
 
                     elif close_method == 1:
@@ -1769,326 +1815,18 @@ class BT(QObject):
                             self.cover_option_contract(tick, option, option_contract_setting)
 
     def onAccounts(self):
-        loader = QUiLoader()
-        self.account_management = loader.load('account_management.ui', parentWidget=self.window)
-        self.account_management.setWindowTitle("账户")
-
-        self.account_list = self.account_management.findChild(QListWidget)
-        self.add_account_button = self.account_management.findChild(QPushButton, "add_account")
-        self.delete_account_button = self.account_management.findChild(QPushButton, "delete_account")
-
-        self.add_account_button.clicked.connect(self.onNewAccount)
-        self.delete_account_button.clicked.connect(self.onDeleteAccount)
-        self.account_list.itemClicked.connect(self.onAccountListClicked)
-        account_folder = os.path.normpath(os.path.join(ROOT, "accounts"))
-        files = [f for f in os.listdir(account_folder) if os.path.isfile(os.path.normpath(os.path.join(account_folder, f))) and f.endswith("bt")]
-        for f in files:
-            name, extension = os.path.splitext(f)
-            self.account_list.addItem(name)
-        self.account_management.show()
-
-    def onAccountListClicked(self, item):
-        name = item.text()
-        account_folder = os.path.normpath(os.path.join(ROOT, "accounts", "%s.bt" % name))
-        with open(account_folder, 'rb') as f:
-            # Pickle the 'data' dictionary using the highest protocol available.
-            data = pickle.load(f)
-
-        self.account_name = self.account_management.findChild(QLineEdit, "name")
-        self.assert_value = self.account_management.findChild(QDoubleSpinBox, "investment")
-        self.commission_rate = self.account_management.findChild(QDoubleSpinBox, "commission_rate")
-        self.option_commission_rate = self.account_management.findChild(QDoubleSpinBox, "option_commission_rate")
-        self.slide_point = self.account_management.findChild(QDoubleSpinBox, "slide_point")
-        self.stop_profit = self.account_management.findChild(QDoubleSpinBox, "stop_profit")
-        self.stop_loss = self.account_management.findChild(QDoubleSpinBox, "stop_loss")
-
-        self.assert_value.setValue(data.get("investment"))
-        self.commission_rate.setValue(data.get("commission_rate"))
-        self.option_commission_rate.setValue(data.get("option_commission_rate"))
-        self.slide_point.setValue(data.get("slide_point"))
-        self.stop_profit.setValue(data.get("stop_profit"))
-        self.stop_loss.setValue(data.get("stop_loss"))
-        return
-
-    def onNewAccount(self):
-
-        loader = QUiLoader()
-        self.create_account = loader.load('create_account.ui', parentWidget=self.account_management)
-        self.create_account.setWindowTitle("账户设置")
-
-        self.account_name = self.create_account.findChild(QLineEdit, "name")
-
-        self.assert_value = self.create_account.findChild(QSpinBox, "assert_value")
-        self.assert_value.setValue(setting.ACCOUNT["investment"]["value"])
-
-        self.commission_rate = self.create_account.findChild(QDoubleSpinBox, "commission_rate")
-        self.commission_rate.setValue(setting.ACCOUNT["commission_rate"]["value"])
-
-        self.option_commission_rate = self.create_account.findChild(QDoubleSpinBox, "option_commission_rate")
-        self.option_commission_rate.setValue(setting.ACCOUNT["option_commission_rate"]["value"])
-
-        self.profit_ratio = self.create_account.findChild(QDoubleSpinBox, "profit_ratio")
-        self.profit_ratio.setValue(setting.ACCOUNT["profit_ratio"]["value"])
-
-        self.slide_point = self.create_account.findChild(QSpinBox, "slide_point")
-        self.slide_point.setValue(setting.ACCOUNT["slide_point"]["value"])
-
-        self.stop_profit = self.create_account.findChild(QSpinBox, "stop_profit")
-        self.stop_profit.setValue(setting.ACCOUNT["stop_profit"]["value"])
-
-        self.stop_loss = self.create_account.findChild(QSpinBox, "stop_loss")
-        self.stop_loss.setValue(setting.ACCOUNT["stop_loss"]["value"])
-
-        button_box = self.create_account.findChild(QDialogButtonBox)
-        button_box.setEnabled(False)
-
-        button_box.accepted.connect(self.onCreateAccountAccept)
-        button_box.rejected.connect(self.onCreateAccountReject)
-        self.button_box = button_box
-        self.account_name.textEdited.connect(self.onEditAccountName)
-
-        self.create_account.show()
-
-    def onDeleteAccount(self):
-        current_item = self.account_list.currentItem()
-        if current_item:
-            name = current_item.text()
-            account_folder = os.path.normpath(os.path.join(ROOT, "accounts", "%s.bt" % name))
-            if os.path.isfile(account_folder):
-                os.remove(account_folder)
-                if not os.path.isfile(account_folder):
-                    self.account_list.takeItem(self.account_list.row(current_item))
-
-    def onEditAccountName(self):
-        if self.account_name.text().strip():
-            self.button_box.setEnabled(True)
-        else:
-            self.button_box.setEnabled(False)
-
-    def onCreateAccountAccept(self):
-        name = self.account_name.text()
-        info = {
-            "name": name,
-            "investment": self.assert_value.value(),
-            "commission_rate": self.commission_rate.value(),
-            "option_commission_rate":self.option_commission_rate.value(),
-            "profit_ratio": self.profit_ratio.value(),
-            "slide_point":self.slide_point.value(),
-            "stop_profit":self.stop_profit.value(),
-            "stop_loss":self.stop_loss.value(),
-            "currency": "RMB"
-        }
-        self.account_list.addItem(name)
-        account_folder = os.path.normpath(os.path.join(ROOT, "accounts", "%s.bt" % name))
-        with open(account_folder, 'wb') as f:
-            # Pickle the 'data' dictionary using the highest protocol available.
-            pickle.dump(info, f, pickle.HIGHEST_PROTOCOL)
-        return
-
-    def onCreateAccountReject(self):
-        return
+        dialogs.Accounts(self, self.window)
 
     def onActionSignal(self):
         current_window = self.mdi_area.currentSubWindow()
         if current_window is None:
             self.messageBox("请先打开数据")
             return
-        self.data = getattr(current_window, "btData")
-        hidden_columns = getattr(current_window, "hidden_columns")
-        loader = QUiLoader()
-        self.signal = loader.load('signal_dialog.ui', parentWidget=self.window)
-        self.signal.setWindowTitle("函数信号")
-
-        self.button_box = self.signal.findChild(QDialogButtonBox, "buttonBox")
-
-        self.open_signal_box = self.signal.findChild(QComboBox, "openbox")
-        self.open_signal_list1 = self.signal.findChild(QListWidget, "open_list1")
-        self.open_signal_list2 = self.signal.findChild(QListWidget, "open_list2")
-
-        self.close_signal_box = self.signal.findChild(QComboBox, "closebox")
-        self.close_signal_list1 = self.signal.findChild(QListWidget, "close_list1")
-        self.close_signal_list2 = self.signal.findChild(QListWidget, "close_list2")
-
-        self.button_box.accepted.connect(self.onSignalAccept)
-        self.button_box.rejected.connect(self.onSignalReject)
-
-        self.list_items = [i for i in list(self.data.columns) if i not in hidden_columns]
-        for item in self.list_items:
-            self.open_signal_list1.addItem(item)
-            self.close_signal_list1.addItem(item)
-            self.open_signal_list2.addItem(item)
-            self.close_signal_list2.addItem(item)
-
-        self.signal.show()
+        dialogs.Signal(self, self.window, current_window)
 
     def onActionMSignal(self):
 
-        subWindow = QMdiSubWindow()
-        loader = QUiLoader()
-        manual_create_order = loader.load('msignal_dialog.ui', parentWidget=self.window)
-        self.manual_create_order = manual_create_order
-        manual_create_order.setWindowTitle("手动下单")
-
-        order_type = manual_create_order.findChild(QComboBox, "order_type")
-        underlying_id = manual_create_order.findChild(QComboBox, "underlying_id")
-        contract_id = manual_create_order.findChild(QComboBox, "contract_id")
-        add_order = manual_create_order.findChild(QPushButton, "add_order")
-
-        self.manual_create_order.findChild(QAction, "delete_order").triggered.connect(self.onDeleteOrder)
-
-        calendar = manual_create_order.findChild(QCalendarWidget)
-        order_tree = manual_create_order.findChild(QTreeWidget)
-
-        order_tree.itemClicked.connect(self.onOrderTreeClicked)
-        order_tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        order_tree.customContextMenuRequested.connect(self.onOrderTreeRightClicked)
-
-        order_type.currentTextChanged.connect(self.onManualSignalOrderTypeChanged)
-        order_type.setCurrentIndex(1)
-
-        underlying_id.currentTextChanged.connect(self.onManualSignalUnderlyingIdChanged)
-        contract_id.currentTextChanged.connect(self.onManualSignalContractIdChanged)
-        calendar.clicked.connect(self.onManualSignalCalendarClicked)
-
-        add_order.clicked.connect(self.onAddOrderClicked)
-
-        subWindow.setAttribute(Qt.WA_DeleteOnClose)
-        subWindow.btType = None
-        subWindow.setWidget(manual_create_order)
-        self.mdi_area.addSubWindow(subWindow)
-
-        manual_create_order.show()
-
-    def onDeleteOrder(self):
-        order_tree = self.manual_create_order.findChild(QTreeWidget)
-        item = order_tree.currentItem()
-        index = order_tree.indexOfTopLevelItem(item)
-        order_tree.takeTopLevelItem(index)
-
-    def onOrderTreeRightClicked(self):
-        order_tree = self.manual_create_order.findChild(QTreeWidget)
-        delete_order = self.manual_create_order.findChild(QAction, "delete_order")
-        if order_tree.currentColumn() > 0:
-            menu = QMenu(order_tree)
-            menu.addAction(delete_order)
-            menu.popup(QtGui.QCursor.pos())
-
-    def onOrderTreeClicked(self, item, column):
-
-        send_date_text = item.text(0)
-
-        underlying_id_text = item.text(1)
-        contract_id_text = item.text(2)
-        position_effect_text = item.text(3)
-        side_text = item.text(4)
-        order_type_text = item.text(5)
-        volume = item.text(6)
-
-        self.manual_create_order.findChild(QDateEdit, "send_date").setDate(QtCore.QDate.fromString(send_date_text, "yyyy-MM-dd 00:00:00"))
-        self.manual_create_order.findChild(QComboBox, "order_type").setCurrentText(order_type_text)
-        self.manual_create_order.findChild(QComboBox, "underlying_id").setCurrentText(underlying_id_text)
-        if contract_id_text:
-            contract_id = self.manual_create_order.findChild(QComboBox, "contract_id")
-            ids = getattr(contract_id, "ids")
-            contract_id.setCurrentIndex(ids.index(contract_id_text))
-        self.manual_create_order.findChild(QComboBox, "position_effect").setCurrentText(position_effect_text)
-        self.manual_create_order.findChild(QComboBox, "side").setCurrentText(side_text)
-        self.manual_create_order.findChild(QSpinBox, "volume").setValue(int(volume))
-
-    def onAddOrderClicked(self):
-
-        send_date = self.manual_create_order.findChild(QDateEdit, "send_date")
-        order_type = self.manual_create_order.findChild(QComboBox, "order_type")
-        underlying_id = self.manual_create_order.findChild(QComboBox, "underlying_id")
-        contract_id = self.manual_create_order.findChild(QComboBox, "contract_id")
-        position_effect = self.manual_create_order.findChild(QComboBox, "position_effect")
-        side = self.manual_create_order.findChild(QComboBox, "side")
-        volume = self.manual_create_order.findChild(QSpinBox, "volume")
-
-        order_tree = self.manual_create_order.findChild(QTreeWidget)
-
-        item = QTreeWidgetItem(order_tree)
-        item.setText(0, send_date.dateTime().toString("yyyy-MM-dd 00:00:00"))
-        item.setText(1, underlying_id.currentText())
-        if order_type.currentIndex() == 0:
-            if hasattr(contract_id, "ids"):
-                ids = getattr(contract_id, "ids")
-                contract_symbol_index = contract_id.currentIndex()
-                item.setText(2, ids[contract_symbol_index])
-        item.setText(3, position_effect.currentText())
-        item.setText(4, side.currentText())
-        item.setText(5, order_type.currentText())
-        item.setText(6, str(volume.value()))
-
-    def onManualSignalOrderTypeChanged(self, text):
-        underlying_id = self.manual_create_order.findChild(QComboBox, "underlying_id")
-        underlying_id.clear()
-        if text == "期权合约":
-            underlying_ids = []
-            for index in range(self.option_list.rowCount()):
-                underlying_ids.append(self.option_list.item(index, 1).text())
-            underlying_id.addItems(underlying_ids)
-            self.manual_create_order.findChild(QComboBox, "contract_id").setEnabled(True)
-        elif text == "期权标的":
-            date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
-            table = "option/contract"
-            data = sql.read(table, where="maturity_date>='%s' AND listed_date <= '%s' " % (date, date))
-            ids = [id for id, group in data.groupby(["underlying_order_book_id"])]
-            # underlying_ids = []
-            # for index in range(self.option_list.rowCount()):
-            #     underlying_ids.append(self.option_list.item(index, 1).text())
-            self.manual_create_order.findChild(QComboBox, "underlying_id").addItems(ids)
-            self.manual_create_order.findChild(QComboBox, "contract_id").setEnabled(False)
-
-    def onManualSignalContractIdChanged(self, text):
-        contract_id = self.manual_create_order.findChild(QComboBox, "contract_id")
-        if not hasattr(contract_id, "ids"):
-            return
-        ids = getattr(contract_id, "ids")
-        if ids == []:
-            return
-        index = contract_id.currentIndex()
-        text = ids[index]
-        date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
-        table = "option/contracts/%s" % text
-        data = sql.read(table, where="date='%s'" % date)
-        close_price = data.close
-        self.manual_create_order.findChild(QDoubleSpinBox, "close_price").setValue(close_price)
-
-    def onManualSignalUnderlyingIdChanged(self, text):
-        if not text:
-            return
-        order_type = self.manual_create_order.findChild(QComboBox, "order_type")
-        if order_type.currentIndex() == 0:
-            contract_id = self.manual_create_order.findChild(QComboBox, "contract_id")
-            date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
-            contract_id.clear()
-            table = "option/contract"
-            data = sql.read(table, where="underlying_symbol='%s' AND maturity_date>='%s' AND listed_date <= '%s' " % (text, date, date))
-            ids = list(data.order_book_id)
-            symbols = list(data.symbol)
-            contract_id.addItems(symbols)
-            setattr(contract_id, "ids", ids)
-        else:
-            table = "option/underlyings/%s" % text
-            date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
-            data = sql.read(table, where="date='%s'" % date)
-            close_price = data.close
-            self.manual_create_order.findChild(QDoubleSpinBox, "close_price").setValue(close_price)
-
-    def onManualSignalCalendarClicked(self, date):
-
-        date_str = date.toString("yyyy-MM-dd 00:00:00")
-        table = "option/underlyings/510050.XSHG"
-        tick = sql.read(table, where="date='%s'" % date_str)
-        if tick.empty:
-            self.messageBox("不是交易日")
-            return
-        self.manual_create_order.findChild(QDateEdit, "send_date").setDate(date)
-        order_type = self.manual_create_order.findChild(QComboBox, "order_type")
-        text = order_type.currentText()
-        self.onManualSignalOrderTypeChanged(text)
-
+        subWindows.ManualSignal(self, self.window, self.mdi_area)
 
     def onActionFunction(self):
 
@@ -2096,278 +1834,7 @@ class BT(QObject):
         if current_window is None:
             self.messageBox("请先打开数据")
             return
-        self.data = getattr(current_window, "btData")
-        hidden_columns = getattr(current_window, "hidden_columns")
-        data = self.data
-        loader = QUiLoader()
-        function_ui = loader.load('function_dialog.ui', parentWidget=self.window)
-        function_ui.setWindowTitle("函数计算")
-        function_tab = function_ui.findChild(QTabWidget, "function_tab")
-        input = function_ui.findChild(QLineEdit, "column_name")
-        button_box = function_ui.findChild(QDialogButtonBox, "buttonBox")
-
-        input.textEdited.connect(lambda: self.onFunctionInput(function_ui))
-        button_box.accepted.connect(lambda: self.onFunctionAccept(function_ui, data))
-        button_box.rejected.connect(self.onFunctionReject)
-
-        "lambda event: self.onTableViewColumnDoubleClicked(event, None)"
-
-        function_tab.currentChanged.connect(lambda event: self.onLoadFunctionDialogTab(event, function_ui, data, hidden_columns))
-        #self.function_tab.currentChanged.connect(self.onLoadFunctionDialogTab)
-        button_box.setEnabled(False)
-        self.onLoadFunctionDialogTab(0, function_ui, data, hidden_columns)
-        function_ui.show()
-
-    def onLoadFunctionDialogTab(self, index, function_ui, data, hidden_columns):
-        if index == 0:
-            self.cal_list1 = function_ui.findChild(QListWidget, "cal_list1")
-            self.cal_list2 = function_ui.findChild(QListWidget, "cal_list2")
-            self.function_box = function_ui.findChild(QComboBox, "function_box")
-            self.list_items = [i for i in list(data.columns) if i not in hidden_columns]
-            self.cal_list1.clear()
-            self.cal_list2.clear()
-            for item in self.list_items:
-                self.cal_list1.addItem(item)
-            for item in self.list_items:
-                self.cal_list2.addItem(item)
-            self.function_box.currentIndexChanged.connect(self.onFunctionCalculateBox)
-        elif index == 1:
-            self.rel_list1 = function_ui.findChild(QListWidget, "rel_list1")
-            self.rel_list2 = function_ui.findChild(QListWidget, "rel_list2")
-            self.function_box = function_ui.findChild(QComboBox, "rel_box")
-            self.list_items = [i for i in list(data.columns) if i not in hidden_columns]
-            self.rel_list1.clear()
-            self.rel_list2.clear()
-            for item in self.list_items:
-                self.rel_list1.addItem(item)
-            for item in self.list_items:
-                self.rel_list2.addItem(item)
-            self.function_box.currentIndexChanged.connect(self.onFunctionCalculateBox)
-        elif index == 2:
-            self.search_tec_function = function_ui.findChild(QLineEdit, "search_input")
-            self.tec_tree = function_ui.findChild(QTreeWidget, "tec_tree")
-            talib_groups = talib.get_function_groups()
-
-            for key in talib_groups.keys():
-                node = QTreeWidgetItem(self.tec_tree)
-                node.setText(0, key)
-                for value in talib_groups[key]:
-                    sub_node = QTreeWidgetItem(node)
-                    sub_node.setText(0, value)
-
-            self.tec_tree.itemClicked.connect(lambda event1, event2: self.onFunctionTecTree(event1, event2, function_ui))
-            #self.search_tec_function.textEdited.connect(self.onFunctionInput)
-
-    def onTecFunctionSearched(self):
-        text = self.search_tec_function.text().strip()
-
-    def onFunctionTecTree(self, item, column, function_ui):
-        group_box = function_ui.findChild(QGroupBox, "parameter_box")
-        labels = group_box.findChildren(QLabel)
-        spin_boxs = group_box.findChildren(QSpinBox)
-        for label in labels:
-            label.close()
-        for spin_box in spin_boxs:
-            spin_box.close()
-        text = item.text(column)
-
-        if text in talib.get_function_groups().keys():
-            return
-        indicator = abstract.Function(text.lower())
-        params_dict = indicator.get_parameters()
-        keys = params_dict.keys()
-        locator = 20
-        num = 0
-        paras_locators = [locator + i * 30 for i in range(len(keys))]
-        for key in keys:
-            p = paras_locators[num]
-            value = params_dict[key]
-            label = QLabel(group_box)
-            label.setText(key)
-            label.setGeometry(10, p, 100, 20)
-            spin_box = QSpinBox(group_box)
-            spin_box.setGeometry(100, p, 50, 20)
-            spin_box.setObjectName(text)
-            spin_box.setWhatsThis(key)
-            spin_box.setValue(value)
-            label.show()
-            spin_box.show()
-            num += 1
-
-    def onFunctionInput(self, function_ui):
-        input = function_ui.findChild(QLineEdit, "column_name")
-        button_box = function_ui.findChild(QDialogButtonBox, "buttonBox")
-        if input.text().strip():
-            button_box.setEnabled(True)
-        else:
-            button_box.setEnabled(False)
-
-    def onFunctionCalculateBox(self, index):
-        self.cal_list2.clear()
-        if index <= 4:
-            for item in self.list_items:
-                self.cal_list2.addItem(item)
-
-    def onFunctionAccept(self, function_ui, data):
-        df = []
-        function_tab = function_ui.findChild(QTabWidget, "function_tab")
-        input = function_ui.findChild(QLineEdit, "column_name")
-        column_name = input.text()
-        current_tab_index = function_tab.currentIndex()
-
-        text = self.function_box.currentText()
-        if current_tab_index == 0:
-            list1_row_text = self.cal_list1.currentItem().text()
-            list2_row_text = self.cal_list2.currentItem().text()
-            col1 = data.loc[:, list1_row_text]
-            col2 = data.loc[:, list2_row_text]
-            if text == u"求和":
-                df = col1 + col2
-            elif text == u"求差":
-                df = col1 - col2
-            elif text == u"求积":
-                df = col1 * col2
-            elif text == u"求商":
-                df = col1 / col2
-            elif text == u"求幂":
-                df = np.power(col1, col2)
-            elif text == u"正弦":
-                df = np.sin(col2)
-            elif text == u"余弦":
-                df = np.cos(col2)
-            elif text == u"正切":
-                df = np.tan(col2)
-            elif text == u"反正弦":
-                df = np.arcsin(col2)
-            elif text == u"反余弦":
-                df = np.arccos(col2)
-            elif text == u"反正切":
-                df = np.arctan(col2)
-            elif text == u"指数":
-                df = np.exp(col2)
-            elif text == u"开平方":
-                df = np.sqrt(col2)
-            data[column_name] = df
-        elif current_tab_index == 1:
-            list1_row_text = self.cal_list1.currentItem().text()
-            list2_row_text = self.cal_list2.currentItem().text()
-            col1 = data.loc[:, list1_row_text]
-            col2 = data.loc[:, list2_row_text]
-            if text == u"上穿":
-                try:
-                    relation_signal = np.where((col1 > col2) & (col1.shift() < col2.shift()), 1, 0)
-                except:
-                    self.messageBox(u"当前数据不支持上穿")
-                    return False
-            elif text == u"下穿":
-                try:
-                    relation_signal = np.where((col1 < col2) & (col1.shift() > col2.shift()), 1, 0)
-                except:
-                    self.messageBox(u"当前数据不支持下穿")
-                    return False
-            elif text == u"大于":
-                relation_signal = np.where((col1 > col2), 1, 0)
-            elif text == u"大于或等于":
-                relation_signal = np.where((col1 >= col2), 1, 0)
-            elif text == u"小于":
-                relation_signal = np.where((col1 < col2), 1, 0)
-            elif text == u"小于或等于":
-                relation_signal = np.where((col1 <= col2), 1, 0)
-            elif text == u"等于":
-                relation_signal = np.where((col1 == col2), 1, 0)
-            elif text == u"或" :
-                relation_signal = np.where((col1 | col2), 1, 0)
-            elif text == u"且":
-                relation_signal = np.where((col1 & col2), 1, 0)
-            elif text == u"非":
-                relation_signal = np.where((col2 ^ 1), 1, 0)
-            else:
-                relation_signal = 0
-            data[column_name] = relation_signal
-        elif current_tab_index == 2:
-            function_name = self.tec_tree.currentItem().text(0)
-
-            if function_name in talib.get_function_groups().keys():
-                #self.messageBox("请选择正确的函数后再试")
-                return
-            tech_indicator = talib.abstract.Function(function_name.lower())
-            output_names = tech_indicator.output_names
-            group_box = function_ui.findChild(QGroupBox, "parameter_box")
-            spin_boxs = group_box.findChildren(QSpinBox)
-
-            data_arrays = {"close": data.get("close", []),
-                           "open": data.get("open", []),
-                           "high": data.get("high", []),
-                           "low": data.get("low", []),
-                           "volume": data.get("volume", [])}
-            tech_indicator.set_input_arrays(data_arrays)
-
-            parameters = {}
-
-            for spin_box in spin_boxs:
-
-                name = spin_box.objectName()
-                if name == function_name:
-                    param_key = spin_box.whatsThis()
-                    param_value = spin_box.value()
-                    parameters.update({param_key:param_value})
-            tech_indicator.set_parameters(parameters)
-            data_frame = tech_indicator.run()
-            if len(output_names) == 1:
-                data[column_name] = data_frame
-            else:
-                for i in range(len(output_names)):
-                    output_name = output_names[i]
-                    data[output_name] = data_frame[i]
-
-        self.__display_table(data)
-
-    def onFunctionReject(self):
-        delattr(self, "cal_list1")
-        delattr(self, "cal_list2")
-        delattr(self, "list_items")
-        delattr(self, "data")
-        delattr(self, "function_box")
-        delattr(self, "button_box")
-
-    def onSignalAccept(self):
-
-        open_signal_text = self.open_signal_box.currentText()
-        open_list1_row_number = self.open_signal_list1.currentRow()
-        open_list2_row_number = self.open_signal_list2.currentRow()
-        if open_list1_row_number >= 0 and open_list2_row_number >= 0:
-            open_col1 = self.data.loc[:, self.data.columns[open_list1_row_number]]
-            open_col2 = self.data.loc[:, self.data.columns[open_list2_row_number]]
-            open_signal = self.__calculate_signal(open_signal_text, open_col1, open_col2, 1)
-        else:
-            open_signal = 0
-
-        close_signal_text = self.close_signal_box.currentText()
-        close_list1_row_number = self.close_signal_list1.currentRow()
-        close_list2_row_number = self.close_signal_list2.currentRow()
-        if close_list1_row_number >= 0 and close_list2_row_number >= 0:
-            close_col1 = self.data.loc[:, self.data.columns[close_list1_row_number]]
-            close_col2 = self.data.loc[:, self.data.columns[close_list2_row_number]]
-            close_signal = self.__calculate_signal(close_signal_text, close_col1, close_col2, -1)
-        else:
-            close_signal = 0
-        signal = open_signal|close_signal
-        if "signal" in self.data.columns:
-            signal = self.data["signal"]|signal
-
-        for i in range(len(signal)-1, -1, -1):
-            n = signal[i]
-            if n == 1:
-                signal[i] = 0
-                break
-            elif n == -1:
-                break
-
-        self.data["signal"] = signal
-        self.__display_table(self.data)
-        return
-
-    def onSignalReject(self):
+        dialogs.Function(self, self.window, current_window)
         return
 
     def onActionIndicator(self):
@@ -2420,20 +1887,7 @@ class BT(QObject):
         selectedColumns = [selection.column() for selection in tableView.selectionModel().selectedColumns()]
         btData = getattr(currentSubWindow, "btData")
         selectedData = btData.iloc[:, selectedColumns]
-        self._show_plot_sub_window(selectedData)
-        # # plt.figure()
-        # try:
-        #     ax = selectedData.plot(title="走势图")
-        #     labels = ax.get_xticklabels() + ax.legend().texts + [ax.title]
-        #     for label in labels:
-        #         label.set_fontproperties(font)
-        #     plt.show()
-        # except Exception as err:
-        #     self.messageBox("{0}".format(err))
-        # loader = QUiLoader()
-        # loader.registerCustomWidget(bt_plot.Pic)
-        # circle = loader.load('pic_show.ui')
-        # circle.show()
+        subWindows.Plot(selectedData, self.window, self.mdi_area)
         return
 
     def onTableViewCellDoubleClicked(self, index):
@@ -2805,69 +2259,8 @@ class BT(QObject):
                 if name in hidden_columns:
                     table_view.setColumnHidden(i, True)
 
-    def _show_plot_sub_window(self, data_frame):
-        if data_frame.empty:
-            return
-        loader = QUiLoader()
-        subwindow = self.loadUI("plot.ui")
-        subwindow.setWindowTitle("图形展示")
-
-        pwidget = subwindow.findChild(QWidget)
-
-        canvas = FigureCanvas(Figure())
-        canvas.figure.add_subplot(111)
-        canvas.axes = canvas.figure.add_subplot(111)
-
-        canvas.mpl_connect('motion_notify_event', lambda event: self.onPlotMotion(event, canvas))
-        canvas.mpl_connect('key_press_event', self.onPlotPress)
-
-        cols = list(data_frame.columns)
-        index = list(data_frame.index)
-        index_name = data_frame.index.name
-        for i in range(0, len(index)):
-            self.label_text[i] = []
-            for j in range(0, len(cols)):
-                col_data = float(data_frame.iloc[i, j])
-                self.label_text[i].append(canvas.axes.annotate("%s:%s\n%s:%s" %
-                                                             (index_name, index[i], cols[j], col_data), (i, col_data),
-                                                             bbox=dict(boxstyle="round", fc="w", ec="k"), visible=False,
-                                                             size=0.3 * 36))
-                # self.label_text[i, col_data] = self.axes.annotate("%s: %s" % (cols[j], col_data), (i, col_data), visible=False)
-        axes = data_frame.plot(ax=canvas.axes, legend=True, subplots=self.subplot)
-        # self.axes.legend(loc="best")
-        # x_label = to_unicode(index_name)
-        # x_label = index_name
-        axes.set_xlabel(index_name)
-        axes.grid(True)
-        axes.tick_params(axis='x', labelsize=7)
-        toolbar = NavigationToolbar2QT(canvas, pwidget)
-        toolbar.update()
-        l = QtWidgets.QVBoxLayout(pwidget)
-        l.addWidget(toolbar)
-        l.addWidget(canvas)
-        subwindow.setAttribute(Qt.WA_DeleteOnClose)
-
-        self.mdi_area.addSubWindow(subwindow)
-        subwindow.show()
-
-    def onPlotMotion(self, evt, canvas):
-        for texts in self.label_text.values():
-            for text in texts:
-                if text.get_visible():
-                    text.set_visible(False)
-        if evt.inaxes:
-            mycursor = QtGui.QCursor()
-            canvas.setCursor(mycursor)
-            #self.canvas.setCursor(mycursor)
-            xpos = int(evt.xdata)
-            annotations = self.label_text.get(xpos, [])
-            for annotation in annotations:
-                if not annotation.get_visible():             # is entered
-                    annotation.set_visible(True)
-            canvas.axes.figure.canvas.draw()
-
-    def onPlotPress(self, evt):
-        return
+    def display_table(self, data, currentSubWindow=None):
+        self.__display_table(data, currentSubWindow)
 
     def __display_table(self, data, currentSubWindow=None):
         if currentSubWindow is None:
@@ -2884,38 +2277,6 @@ class BT(QObject):
                 tableView.setColumnHidden(index, True)
             else:
                 tableView.setColumnHidden(index, False)
-
-    def __calculate_signal(self, text, col1, col2, signal_number):
-        relation_signal = 0
-        if text == u"上穿":
-            try:
-                relation_signal = np.where((col1 > col2) & (col1.shift() < col2.shift()), signal_number, 0)
-            except:
-                self.messageBox(u"当前数据不支持上穿")
-                return False
-        elif text == u"下穿":
-            try:
-                relation_signal = np.where((col1 < col2) & (col1.shift() > col2.shift()), signal_number, 0)
-            except:
-                self.messageBox(u"当前数据不支持下穿")
-                return False
-        elif text == u"大于":
-            relation_signal = np.where((col1 > col2), signal_number, 0)
-        elif text == u"大于或等于":
-            relation_signal = np.where((col1 >= col2), signal_number, 0)
-        elif text == u"小于":
-            relation_signal = np.where((col1 < col2), signal_number, 0)
-        elif text == u"小于或等于":
-            relation_signal = np.where((col1 <= col2), signal_number, 0)
-        elif text == u"等于":
-            relation_signal = np.where((col1 == col2), signal_number, 0)
-        elif text == u"或":
-            relation_signal = np.where((col1 | col2), signal_number, 0)
-        elif text == u"且":
-            relation_signal = np.where((col1 & col2), signal_number, 0)
-        elif text == u"非":
-            relation_signal = np.where((col2 ^ 1), signal_number, 0)
-        return relation_signal
 
     def _get_max_drawdown(self, array):
         drawdowns = []

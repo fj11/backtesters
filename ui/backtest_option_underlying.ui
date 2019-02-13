@@ -24,7 +24,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="ratio"/>
+      <widget class="QSpinBox" name="ratio">
+       <property name="maximum">
+        <number>100</number>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer">
@@ -143,7 +147,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="volume"/>
+      <widget class="QSpinBox" name="volume">
+       <property name="maximum">
+        <number>1000000</number>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer_5">

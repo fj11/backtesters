@@ -132,7 +132,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="price"/>
+           <widget class="QDoubleSpinBox" name="price">
+            <property name="maximum">
+             <double>10000000.000000000000000</double>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -146,7 +150,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="volume"/>
+           <widget class="QSpinBox" name="volume">
+            <property name="maximum">
+             <number>10000000</number>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -169,7 +177,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="res_price"/>
+           <widget class="QDoubleSpinBox" name="res_price">
+            <property name="maximum">
+             <double>1000000000.000000000000000</double>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -183,7 +195,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="res_volume"/>
+           <widget class="QSpinBox" name="res_volume">
+            <property name="maximum">
+             <number>100000000</number>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -197,7 +213,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="amount"/>
+           <widget class="QDoubleSpinBox" name="amount">
+            <property name="maximum">
+             <double>10000000000.000000000000000</double>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>

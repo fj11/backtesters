@@ -81,7 +81,7 @@ if __name__ == "__main__":
     #     break
     # print(read("option/underlyings/510050.XSHG", where="date='2016-06-01 00:00:00'"))
     print(read("option/underlyings/M1803", select="close", where="date='2017-03-15 00:00:00'").at[0, "close"])
-    print(read("option/contracts/10001307"))
+    print(read("option/contracts/10001307").columns)
     # d = read("future/contract", where="underlying_symbol='%s' AND symbol LIKE '%%主力连续'" % "CU")
     # print(d)
     # print(d[d["order_book_id"]=="10001307"])
