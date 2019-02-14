@@ -943,7 +943,7 @@ class BT(QObject):
                 "id": {
                     "type": "list",
                     "value": 0,
-                    "list": [i.btId for i in self.mdi_area.subWindowList() if i.btType in ["option_underlying", "excel", "csv"]]
+                    "list": [i.btId for i in self.mdi_area.subWindowList() if hasattr(i, "btType") and i.btType in ["option_underlying", "excel", "csv"]]
                 },
                 "signal": {
                     "type": "list",
