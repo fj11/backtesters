@@ -28,7 +28,7 @@ os.environ["QT_API"] = "pyqt5"
 from src import sql, pandas_mode, setting, tradeCenter, dialogs, subWindows
 
 os.chdir("ui")
-ROOT = os.path.normpath(os.path.join(os.path.dirname(sys.argv[0])))
+ROOT = os.path.normpath(os.path.join(os.curdir, ".."))
 
 def get_disk_id():
     import wmi

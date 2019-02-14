@@ -374,6 +374,8 @@ class Signal():
 class Accounts():
 
     def __init__(self, parent, parent_widget):
+
+        self.root = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
         self.parent = parent
         loader = QUiLoader()
         self.account_management = loader.load('account_management.ui', parentWidget=parent_widget)
@@ -386,7 +388,7 @@ class Accounts():
         self.add_account_button.clicked.connect(lambda :self.onNewAccount(self.account_management))
         self.delete_account_button.clicked.connect(self.onDeleteAccount)
         self.account_list.itemClicked.connect(self.onAccountListClicked)
-        account_folder = os.path.normpath(os.path.join(parent.root, "accounts"))
+        account_folder = os.path.normpath(os.path.join(self.root, "accounts"))
         files = [f for f in os.listdir(account_folder) if
                  os.path.isfile(os.path.normpath(os.path.join(account_folder, f))) and f.endswith("bt")]
         for f in files:
@@ -396,7 +398,7 @@ class Accounts():
 
     def onAccountListClicked(self, item):
         name = item.text()
-        account_folder = os.path.normpath(os.path.join(self.parent.root, "accounts", "%s.bt" % name))
+        account_folder = os.path.normpath(os.path.join(self.root, "accounts", "%s.bt" % name))
         with open(account_folder, 'rb') as f:
             # Pickle the 'data' dictionary using the highest protocol available.
             data = pickle.load(f)
@@ -459,7 +461,7 @@ class Accounts():
         current_item = self.account_list.currentItem()
         if current_item:
             name = current_item.text()
-            account_folder = os.path.normpath(os.path.join(self.parent.root, "accounts", "%s.bt" % name))
+            account_folder = os.path.normpath(os.path.join(self.root, "accounts", "%s.bt" % name))
             if os.path.isfile(account_folder):
                 os.remove(account_folder)
                 if not os.path.isfile(account_folder):
@@ -485,7 +487,7 @@ class Accounts():
             "currency": "RMB"
         }
         self.account_list.addItem(name)
-        account_folder = os.path.normpath(os.path.join(self.parent.root, "accounts", "%s.bt" % name))
+        account_folder = os.path.normpath(os.path.join(self.root, "accounts", "%s.bt" % name))
         with open(account_folder, 'wb') as f:
             # Pickle the 'data' dictionary using the highest protocol available.
             pickle.dump(info, f, pickle.HIGHEST_PROTOCOL)
