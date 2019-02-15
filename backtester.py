@@ -9,7 +9,6 @@ import time
 import pickle
 
 import pandas as pd
-import numpy as np
 
 ################ 不可以删除 ##################
 from PySide2.QtXml import QDomNode
@@ -25,7 +24,6 @@ from PySide2.QtWidgets import QApplication, QMdiArea, QTreeWidgetItem, \
     QAbstractButton, QAbstractItemView, QSlider
 from PySide2.QtCore import QFile, QObject, Qt
 from PySide2 import QtGui
-os.environ["QT_API"] = "pyqt5"
 
 from src import sql, pandas_mode, setting, dialogs, subWindows
 

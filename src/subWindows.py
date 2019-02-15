@@ -1,4 +1,7 @@
 
+
+import os, pickle, re
+
 import pandas as pd
 import numpy as np
 
@@ -13,14 +16,15 @@ from PySide2.QtWidgets import QApplication, QMdiArea, QTreeWidgetItem, \
 from PySide2.QtCore import Qt
 from PySide2 import QtGui
 
+import matplotlib
+# Make sure that we are using QT5
+matplotlib.use('Qt5Agg')
 from matplotlib.font_manager import FontProperties
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
-from matplotlib.backends.backend_qt5agg import FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from src import sql, tradeCenter, setting
-
-import os, pickle, re
 
 font = FontProperties(fname=r"c:\windows\fonts\simsun.ttc", size=14)
 
