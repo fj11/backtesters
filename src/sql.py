@@ -6,7 +6,7 @@ try:
 except:
     import sqlite3
 
-DB_FILE = os.path.normpath(os.path.join(os.curdir, "../db/bt.db"))
+DB_FILE = os.path.normpath(os.path.join(os.path.dirname(__file__), "../db/bt.db"))
 SQL = sqlite3.connect(DB_FILE, check_same_thread=False)
 CUR_DIR = os.curdir
 SQL.text_factory = str
@@ -32,10 +32,10 @@ def read(table_name, select="*", where=""):
 def read_latest_row(table):
     return pd.read_sql_query("SELECT * FROM '%s' order by %s desc limit 0,1;" % (table, "date"), SQL)
 
-def insert(data, table, if_exists, index=True):
+def insert(data, table, if_exists, index=True, index_label=None):
     try:
         if not data.empty:
-            data.to_sql(table, SQL, if_exists=if_exists, index=index)
+            data.to_sql(table, SQL, if_exists=if_exists, index=index, index_label=index_label)
         return True
     except Exception as err:
         print(("{0}".format(err)))
@@ -76,8 +76,12 @@ if __name__ == "__main__":
     #     print group.columns
     #     break
     # print(read("option/underlyings/510050.XSHG", where="date='2016-06-01 00:00:00'"))
-    print(read("option/underlyings/M1803", select="close", where="date='2017-03-15 00:00:00'").at[0, "close"])
-    print(read("option/contracts/10001307").columns)
+    # print(read("option/underlyings/M1803", select="close", where="date='2017-03-15 00:00:00'").at[0, "close"])
+    # print(read("option/contracts/10001307").columns)
+    d = read('option/underlyings/510050.XSHG')
+    print(d.columns)
+    print(d.iloc[0,:])
+
     # d = read("future/contract", where="underlying_symbol='%s' AND symbol LIKE '%%主力连续'" % "CU")
     # print(d)
     # print(d[d["order_book_id"]=="10001307"])

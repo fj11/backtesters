@@ -106,12 +106,12 @@ def update_future():
                 if is_future_contract_need_update(table):
                     start_date_string = get_started_date(table)
                     df = rq.get_price(id, start_date=start_date_string, end_date=TODAY_STR, frequency='1d')
-                    if not sql.insert(df, table, "append", index=True):
+                    if not sql.insert(df, table, "append", index=True, index_label="date"):
                         df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
-                        sql.insert(df, table, "replace", index=True)
+                        sql.insert(df, table, "replace", index=True, index_label="date")
             else:
                 df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
-                sql.insert(df, table, "replace", index=True)
+                sql.insert(df, table, "replace", index=True, index_label="date")
 
     return
 
@@ -128,12 +128,12 @@ def update_option():
             if is_option_underlying_need_update(table):
                 start_date_string = get_started_date(table)
                 df = rq.get_price(id, start_date=start_date_string, end_date=TODAY_STR, frequency='1d')
-                if not sql.insert(df, table, "append", index=True):
+                if not sql.insert(df, table, "append", index=True, index_label="date"):
                     df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
-                    sql.insert(df, table, "replace", index=True)
+                    sql.insert(df, table, "replace", index=True, index_label="date")
         else:
             df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
-            sql.insert(df, table, "replace", index=True)
+            sql.insert(df, table, "replace", index=True, index_label="date")
 
         #Update option contracts
 
@@ -146,13 +146,13 @@ def update_option():
                 if is_option_contract_need_update(table):
                     start_date_string = get_started_date(table)
                     df = rq.get_price(id, start_date=start_date_string, end_date=TODAY_STR, frequency='1d')
-                    if not sql.insert(df, table, "append", index=True):
+                    if not sql.insert(df, table, "append", index=True, index_label="date"):
                         df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
-                        sql.insert(df, table, "replace", index=True)
+                        sql.insert(df, table, "replace", index=True, index_label="date")
                         option_contract_force_replace = True
             else:
                 df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
-                sql.insert(df, table, "replace", index=True)
+                sql.insert(df, table, "replace", index=True, index_label="date")
 
 if __name__ == "__main__":
     update_stock()

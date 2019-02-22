@@ -97,7 +97,7 @@
     </property>
     <addaction name="actionhelp"/>
     <addaction name="separator"/>
-    <addaction name="actionregister"/>
+    <addaction name="action_registration"/>
     <addaction name="actionabout"/>
     <addaction name="actiondoc"/>
    </widget>
@@ -394,8 +394,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>89</height>
+              <width>274</width>
+              <height>530</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -558,8 +558,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>89</height>
+              <width>274</width>
+              <height>530</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -606,8 +606,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>89</height>
+              <width>274</width>
+              <height>530</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -851,7 +851,7 @@
     <string>帮助</string>
    </property>
   </action>
-  <action name="actionregister">
+  <action name="action_registration">
    <property name="text">
     <string>产品注册码</string>
    </property>

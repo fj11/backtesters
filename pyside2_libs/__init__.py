@@ -149,6 +149,7 @@ class BT(QObject):
         self.window.findChild(QAction, "display_action").triggered.connect(self.onDisplay)
         self.window.findChild(QAction, "action_roll").triggered.connect(self.onRoll)
         self.window.findChild(QAction, "action_delete_column").triggered.connect(self.onDeleteColumn)
+        self.window.findChild(QAction, "action_registration").triggered.connect(self.registration)
 
         self._connectBackTestOptionSignal()
 
@@ -1021,6 +1022,22 @@ class BT(QObject):
                             免责条款：本软件数据来源于公开信息，
                             回测结果仅供投资者分析参考，软件作者
                             不对使用此软件而造成的损失承担任何责任。""")
+
+    def registration(self):
+        dialog = self.loadUI("registration.ui", parentWidget=self.window)
+        dialog.setWindowTitle("产品注册")
+        line_edit = dialog.findChild(QLineEdit, "lineEdit")
+        copy_button = dialog.findChild(QPushButton, "pushButton")
+        uuid = get_uuid()
+        line_edit.setText(uuid)
+        line_edit.setReadOnly(True)
+        copy_button.clicked.connect(lambda: self.registration_copy_button_clicked(line_edit))
+
+        dialog.show()
+
+    def registration_copy_button_clicked(self, line_edit):
+        line_edit.selectAll()
+        line_edit.copy()
 
     def onBacktest(self):
 
