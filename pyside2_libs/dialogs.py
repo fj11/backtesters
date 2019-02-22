@@ -21,7 +21,6 @@ from src import setting
 class Function():
 
     def __init__(self, parent, parent_widget, current_window):
-
         self.parent = parent
         loader = QUiLoader()
         function_ui = loader.load('function_dialog.ui', parentWidget=parent_widget)

@@ -1055,7 +1055,7 @@ class BT(QObject):
 
     def onActionSignal(self):
         current_window = self.mdi_area.currentSubWindow()
-        if current_window is None:
+        if current_window is None or not hasattr(current_window, "btData"):
             self.messageBox("请先打开数据")
             return
         dialogs.Signal(self, self.window, current_window)
@@ -1067,7 +1067,7 @@ class BT(QObject):
     def onActionFunction(self):
 
         current_window = self.mdi_area.currentSubWindow()
-        if current_window is None:
+        if current_window is None or not hasattr(current_window, "btData"):
             self.messageBox("请先打开数据")
             return
         dialogs.Function(self, self.window, current_window)
@@ -1184,7 +1184,7 @@ class BT(QObject):
             # item = (username)
 
     def messageBox(self, messgae):
-        msgBox = QMessageBox()
+        msgBox = QMessageBox(parent=self.window)
         msgBox.setWindowTitle("提示")
         msgBox.setText(messgae)
         msgBox.exec_()
