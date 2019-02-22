@@ -3,7 +3,7 @@ import os, pickle
 
 from PySide2.QtUiTools import QUiLoader
 
-from PySide2.QtWidgets import QApplication, QMdiArea, QTreeWidgetItem, \
+from PySide2.QtWidgets import QTreeWidgetItem, \
     QMessageBox, QMdiSubWindow, QTableView, QToolBox, QFrame, QListView, \
     QTableWidget, QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
     QTabWidget, QTreeWidget, QSpinBox, QLabel, QGroupBox, QPushButton, QFileDialog,\
@@ -13,7 +13,6 @@ from PySide2.QtCore import QFile, QObject, Qt
 
 import talib
 from talib import abstract
-import pandas as pd
 import numpy as np
 
 from src import setting

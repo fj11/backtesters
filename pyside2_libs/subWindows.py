@@ -7,7 +7,7 @@ import numpy as np
 
 from PySide2.QtUiTools import QUiLoader
 from PySide2 import QtCore, QtWidgets
-from PySide2.QtWidgets import QApplication, QMdiArea, QTreeWidgetItem, \
+from PySide2.QtWidgets import QMdiArea, QTreeWidgetItem, \
     QMessageBox, QMdiSubWindow, QTableView, QToolBox, QFrame, QListView, \
     QTableWidget, QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
     QTabWidget, QTreeWidget, QSpinBox, QLabel, QGroupBox, QPushButton, QFileDialog,\
@@ -18,7 +18,8 @@ from PySide2 import QtGui
 
 import matplotlib
 # Make sure that we are using QT5
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
+# os.environ["QT_API"] = "PySide2"
 from matplotlib.font_manager import FontProperties
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas

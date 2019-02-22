@@ -6,12 +6,8 @@ try:
 except:
     import sqlite3
 
-try:
-    DB_FILE = os.path.normpath(os.path.join(os.path.dirname(__file__), "../db/bt.db"))
-    SQL = sqlite3.connect(DB_FILE, check_same_thread=False)
-except:
-    DB_FILE = os.path.normpath("db/bt.db")
-    SQL = sqlite3.connect(DB_FILE, check_same_thread=False)
+DB_FILE = os.path.normpath(os.path.join(os.curdir, "../db/bt.db"))
+SQL = sqlite3.connect(DB_FILE, check_same_thread=False)
 CUR_DIR = os.curdir
 SQL.text_factory = str
 
