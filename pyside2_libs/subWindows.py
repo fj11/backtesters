@@ -427,7 +427,6 @@ class BackTest():
 
     def beforeRun(self):
 
-
         self.orders = {}
         self.positions = {}
         self.cashs = {}
