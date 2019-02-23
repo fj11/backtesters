@@ -2,10 +2,7 @@
 import re
 import os
 import sys
-import wmi
-import copy
 import uuid
-import time
 import pickle
 
 import pandas as pd
@@ -233,200 +230,12 @@ class BT(QObject):
             self.action_save_as_flie.setEnabled(False)
 
     def onBackTestTreeDoubleClicked(self, item, column):
+        subWindows.StrategySetting(self, self.window, item, column)
 
-        loader = QUiLoader()
-        subWindow = QMdiSubWindow()
-        text = item.text(column)
-        whats_this = item.whatsThis(column)
-        if whats_this == "option":
-            bt_type = "backtest_option"
-            title = "期权设置"
-            load_file = "backtest_option.ui"
-            current_node = self.config["options"]
-            setattr(subWindow, "btCurrentNode", self.config["options"])
-        elif whats_this == "option_underlying":
-            title = "标的 %s 的设置" % text
-            load_file = "backtest_option_underlying.ui"
-            bt_type = "backtest_option_underlying"
-            current_node = [i for i in self.config["options"]["underlyings"] if i["name"] == text][0]
-            setattr(subWindow, "btCurrentNode", current_node)
-        elif whats_this == "option_group":
-            title = "期权组 %s 的设置" % text
-            load_file = "backtest_option_group.ui"
-            bt_type = "backtest_option_group"
-            parent_item = item.parent()
-            parent_item_text = parent_item.text(0)
-            underlying_node = [i for i in self.config["options"]["underlyings"] if i["name"] == parent_item_text][0]
-            current_node = [i for i in underlying_node["groups"] if i["name"] == text][0]
-            setattr(subWindow, "btCurrentNode", current_node)
-        elif whats_this == "option_contract":
-            title = "期权合约 %s 的设置" % text
-            load_file = "backtest_option_contract.ui"
-            bt_type = "backtest_option_contract"
-            parent_item = item.parent()
-            parent_item_text = parent_item.text(0)
-            parent_item_whats_this = parent_item.whatsThis(column)
-            if parent_item_whats_this == "option_group":
-                grand_parent_item = parent_item.parent()
-                grand_parent_item_text = grand_parent_item.text(0)
-                underlying_node = [i for i in self.config["options"]["underlyings"] if i["name"] == grand_parent_item_text][0]
-                group_node = [i for i in underlying_node["groups"] if i["name"] == parent_item_text][0]
-                current_node = [i for i in group_node["contracts"] if i["name"] == text][0]
-                setattr(subWindow, "btCurrentNode", current_node)
-            elif parent_item_whats_this == "option_underlying":
-                underlying_node = [i for i in self.config["options"]["underlyings"] if i["name"] == parent_item_text][0]
-                current_node = [i for i in underlying_node["contracts"] if i["name"] == text][0]
-                setattr(subWindow, "btCurrentNode", current_node)
-        elif whats_this == "strategy":
-            title = "策略基本设置"
-            load_file = "strategy.ui"
-            bt_type = "backtest_strategy"
-        else:
-            return
-        if self._active_backtest_widget(bt_type, title):
-            return
-        setattr(subWindow, "btType", bt_type)
-        setattr(subWindow, "btData", self.config)
-        setattr(subWindow, "btFilePath", None)
-        setattr(subWindow, "btType", 0)
-        sub_window_widget = loader.load(load_file, parentWidget=self.window)
-        sub_window_widget.setWindowTitle(title)
-        subWindow.setAttribute(Qt.WA_DeleteOnClose)
-        subWindow.setWidget(sub_window_widget)
-        self.mdi_area.addSubWindow(subWindow)
-
-        #连接各组件信号和展示数据
-        if whats_this == "option":
-            ratio = sub_window_widget.findChild(QSpinBox, "ratio")
-            ratio.setValue(current_node["ratio"]["value"])
-            ratio.valueChanged.connect(self.onRatioChanged)
-        elif whats_this == "option_underlying":
-            ratio = sub_window_widget.findChild(QSpinBox, "ratio")
-            ratio.setValue(current_node["ratio"]["value"])
-            sub_window_widget.findChild(QSpinBox, "ratio").valueChanged.connect(self.onRatioChanged)
-
-            underlying_list = sub_window_widget.findChild(QComboBox, "underlying_list")
-            underlying_list.addItems(current_node["id"]["list"])
-            underlying_list.currentIndexChanged.connect(self.onUnderlyingListChanged)
-            # underlying_list.setCurrentIndex(0)
-
-            signal_list = sub_window_widget.findChild(QComboBox, "signal_list")
-            #signal_list.setCurrentIndex(current_node["signal"]["value"])
-            ids = current_node["id"]["list"]
-            if ids == []:
-                self.messageBox("没有数据")
-                return
-            _sub_window = self.__getSubWindowByAttribute("btId", ids[0])
-            if _sub_window is None:
-                self.messageBox("没有找到标的")
-                return
-            columns = _sub_window.btData.columns
-            signal_column = [i for i in columns if i.startswith("signal")]
-            current_node["signal"]["list"] = signal_column
-            signal_list.addItems(signal_column)
-            signal_list.currentIndexChanged.connect(self.onSignalChanged)
-
-            side = sub_window_widget.findChild(QComboBox, "side")
-            side.setCurrentIndex(current_node["option_side"]["value"])
-            side.currentIndexChanged.connect(self.onOptionSideChanged)
-
-            volume = sub_window_widget.findChild(QSpinBox, "volume")
-            volume.setValue(current_node["volume"]["value"])
-            volume.valueChanged.connect(self.onVolumeChanged)
-
-        elif whats_this == "option_group":
-
-            ratio = sub_window_widget.findChild(QSpinBox, "ratio")
-            ratio.setValue(current_node["ratio"]["value"])
-            sub_window_widget.findChild(QSpinBox, "ratio").valueChanged.connect(self.onRatioChanged)
-
-        elif whats_this == "option_contract":
-            contract_type = sub_window_widget.findChild(QComboBox, "contract_type")
-            contract_type.setCurrentIndex(current_node["option_type"]["value"])
-            contract_type.currentIndexChanged.connect(self.onOptionContractTypeChanged)
-
-            option_side = sub_window_widget.findChild(QComboBox, "option_side")
-            option_side.setCurrentIndex(current_node["option_side"]["value"])
-            option_side.currentIndexChanged.connect(self.onOptionSideChanged)
-
-            close_strategy = sub_window_widget.findChild(QComboBox, "close_strategy")
-            close_strategy.setCurrentIndex(current_node["close_method"]["value"])
-            close_strategy.currentIndexChanged.connect(self.onCloseMethodChanged)
-
-            change_feq = sub_window_widget.findChild(QComboBox, "change_feq")
-            change_feq.setCurrentIndex(current_node["change_feq"]["value"])
-            change_feq.currentIndexChanged.connect(self.onChangeFeqChanged)
-
-            move_condition = sub_window_widget.findChild(QComboBox, "move_condition")
-            move_condition.setCurrentIndex(current_node["change_condition"]["value"])
-            move_condition.currentIndexChanged.connect(self.onChangeConditionChanged)
-
-            interval = sub_window_widget.findChild(QComboBox, "interval")
-            interval.setCurrentIndex(current_node["month_interval"]["value"])
-            interval.currentIndexChanged.connect(self.onMonthIntervalChanged)
-
-            strike_interval = sub_window_widget.findChild(QComboBox, "strike_interval")
-            strike_interval.setCurrentIndex(current_node["strike_interval"]["value"])
-            strike_interval.currentIndexChanged.connect(self.onStrikeIntervalChanged)
-
-            smart_match = sub_window_widget.findChild(QComboBox, "smart_match")
-            smart_match.setCurrentIndex(current_node["smart_selection"]["value"])
-            smart_match.currentIndexChanged.connect(self.onSmartSelectionChanged)
-
-            volume = sub_window_widget.findChild(QSpinBox, "volume")
-            volume.setValue(current_node["volume"]["value"])
-            volume.valueChanged.connect(self.onVolumeChanged)
-
-            deposit_ratio = sub_window_widget.findChild(QDoubleSpinBox, "deposit_ratio")
-            deposit_ratio.setValue(current_node["deposit_coefficient"]["value"])
-            deposit_ratio.valueChanged.connect(self.onDepositCoefficient)
-
-            delta = sub_window_widget.findChild(QDoubleSpinBox, "delta")
-            delta.setValue(current_node["delta"]["value"])
-            delta.valueChanged.connect(self.onDeltaChanged)
-
-            gamma = sub_window_widget.findChild(QDoubleSpinBox, "gamma")
-            gamma.setValue(current_node["gamma"]["value"])
-            gamma.valueChanged.connect(self.onGammaChanged)
-
-            theta = sub_window_widget.findChild(QDoubleSpinBox, "theta")
-            theta.setValue(current_node["theta"]["value"])
-            theta.valueChanged.connect(self.onThetaChanged)
-
-            vega = sub_window_widget.findChild(QDoubleSpinBox, "vega")
-            vega.setValue(current_node["vega"]["value"])
-            vega.valueChanged.connect(self.onVegaChanged)
-
-            rho = sub_window_widget.findChild(QDoubleSpinBox, "rho")
-            rho.setValue(current_node["rho"]["value"])
-            rho.valueChanged.connect(self.onRhoChanged)
-
-            ivix = sub_window_widget.findChild(QDoubleSpinBox, "ivix")
-            ivix.setValue(current_node["ivix"]["value"])
-            ivix.valueChanged.connect(self.onIvixChanged)
-
-        elif whats_this == "strategy":
-            account_folder = os.path.normpath(os.path.join(ROOT, "accounts"))
-            account_files = [os.path.splitext(i)[0] for i in os.listdir(account_folder) if
-                             os.path.splitext(i)[-1] == ".bt"]
-            account_list = sub_window_widget.findChild(QComboBox, "account")
-            account_list.addItems(account_files)
-            account_list.currentTextChanged.connect(self.onBackTestRunAccountChanged)
-
-            open_type_list = sub_window_widget.findChild(QComboBox, "open_type")
-            open_type_list.currentIndexChanged.connect(self.onBackTestOpenTypeChanged)
-
-            table_view = sub_window_widget.findChild(QTableWidget)
-            self.initBacktestAccountTable(table_view, account_files[0])
-
-        subWindow.show()
-
-    def onBackTestOpenTypeChanged(self, value):
-        self.config["open_type"]["value"] = value
-        return
+    def active_backtest_widget(self, bt_type, text):
+        return self._active_backtest_widget(bt_type, text)
 
     def _active_backtest_widget(self, bt_type, text):
-
         for i in self.mdi_area.subWindowList():
             if hasattr(i, "btType") and i.btType==bt_type and i.windowTitle() == text:
                 self.mdi_area.setActiveSubWindow(i)
@@ -456,91 +265,7 @@ class BT(QObject):
                 menu.addAction(no_support)
         menu.popup(QtGui.QCursor.pos())
 
-    def onOptionContractTypeChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["option_type"]["value"] = index
 
-    def onOptionSideChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["option_side"]["value"] = index
-
-    def onCloseMethodChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["close_method"]["value"] = index
-
-    def onChangeFeqChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["change_feq"]["value"] = index
-
-    def onChangeConditionChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["change_condition"]["value"] = index
-
-    def onMonthIntervalChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["month_interval"]["value"] = index
-
-    def onStrikeIntervalChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["strike_interval"]["value"] = index
-
-    def onSmartSelectionChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["smart_selection"]["value"] = index
-
-    def onDepositCoefficient(self, value):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["deposit_coefficient"]["value"] = value
-
-    def onDeltaChanged(self, value):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["delta"]["value"] = value
-
-    def onGammaChanged(self, value):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["gamma"]["value"] = value
-
-    def onThetaChanged(self, value):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["theta"]["value"] = value
-
-    def onVegaChanged(self, value):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["vega"]["value"] = value
-
-    def onRhoChanged(self, value):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["rho"]["value"] = value
-
-    def onIvixChanged(self, value):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["ivix"]["value"] = value
-
-    def onRatioChanged(self, value):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["ratio"]["value"] = value
-
-    def onUnderlyingListChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["id"]["value"] = index
-        text = current_node["id"]["list"][index]
-        signal_list = self.mdi_area.currentSubWindow().findChild(QComboBox, "signal_list")
-        signal_list.clear()
-        sub_window = self.__getSubWindowByAttribute("btId", text)
-        data = sub_window.btData
-        signal_list.addItems([i for i in data.columns if i.startswith("signal")])
-
-    def onOptionSideChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["option_side"]["value"] = index
-
-    def onVolumeChanged(self, value):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["volume"]["value"] = value
-
-    def onSignalChanged(self, index):
-        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
-        current_node["signal"]["value"] = index
 
     def onDisplay(self):
 
@@ -1044,6 +769,9 @@ class BT(QObject):
         subWindows.BackTest(self, self.window)
         #self._show_backtest_sub_window("开始回测", None, id=0)
 
+    def getSubWindowByAttribute(self, key, value):
+        return self.__getSubWindowByAttribute(key, value)
+
     def __getSubWindowByAttribute(self, key, value):
         for i in self.mdi_area.subWindowList():
             if hasattr(i, key) and getattr(i, key) == value:
@@ -1144,44 +872,6 @@ class BT(QObject):
         name = self.future_list.item(row, 0).text()
         id = self.future_list.item(row, 1).text()
         self._get_future_contract(name, id)
-
-    def initBacktestAccountTable(self, widget, filename):
-        file_name = os.path.normpath(   os.path.join(ROOT, "accounts", "%s.bt" % filename))
-        with open(file_name, "rb") as f:
-            data = pickle.load(f)
-            self.config["account"] = data
-            table_widget = widget
-            table_widget.setRowCount(len(data.keys())-1)
-            i = 0
-            for key in data.keys():
-                if key == "name":
-                    continue
-                value = data[key]
-                key_item = QTableWidgetItem(key)
-                value_item = QTableWidgetItem(str(value))
-                table_widget.setItem(i, 0, key_item)
-                table_widget.setItem(i, 1, value_item)
-                i += 1
-
-    def onBackTestRunAccountChanged(self, value):
-        file_name = os.path.normpath(os.path.join(ROOT, "accounts", "%s.bt" % value))
-        with open(file_name, "rb") as f:
-            data = pickle.load(f)
-            self.config["account"] = data
-            table_widget = self.mdi_area.currentSubWindow().findChild(QTableWidget)
-            table_widget.setRowCount(len(data.keys())-1)
-            i = 0
-            for key in data.keys():
-                if key == "name":
-                    continue
-                value = data[key]
-                key_item = QTableWidgetItem(key)
-                value_item = QTableWidgetItem(str(value))
-                table_widget.setItem(i, 0, key_item)
-                table_widget.setItem(i, 1, value_item)
-                i += 1
-            # item = QTableWidgetItem(username)
-            # item = (username)
 
     def messageBox(self, messgae):
         msgBox = QMessageBox(parent=self.window)

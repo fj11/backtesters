@@ -29,6 +29,8 @@ from src import sql, tradeCenter, setting
 
 font = FontProperties(fname=r"c:\windows\fonts\simsun.ttc", size=14)
 
+ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+
 class ManualSignal():
 
     def __init__(self, parent, parent_widget, mdi_area):
@@ -722,7 +724,7 @@ class BackTest():
     def __handleManualOrder(self, date):
         if not hasattr(self.parent, "manual_order_tree"):
             return
-
+        open_type = self.config["open_type"]["value"]
         order_tree = self.parent.manual_order_tree
         count = order_tree. topLevelItemCount()
         for index in range(count):
@@ -742,8 +744,24 @@ class BackTest():
                 tick = sql.read(table, where="date='%s'" % date)
                 tick = tick.T.squeeze()
                 if position_effect_text == "开仓" and side_text == "买入":
+                    if open_type == 0:
+                        volume = volume
+                    elif open_type == 1:
+                        volume = int(volume / tick.close)
+                    elif open_type == 2:
+                        ratio = volume / 100
+                        ratio = 1 if ratio > 1 else ratio
+                        volume = int((ratio * self.tc.cash.available / tick.close))
                     self.buy_option_underlying(underlying_id_text, volume, tick)
                 if position_effect_text == "平仓" and side_text == "卖出":
+                    if open_type == 0:
+                        volume = volume
+                    else:
+                        position = self.tc.optionUnderlyingPosition.get(underlying_id_text, None)
+                        if position:
+                            ratio = volume / 100
+                            ratio = 1 if ratio > 1 else ratio
+                            volume = int(position.volume * ratio)
                     self.sell_option_underlying(underlying_id_text, volume, tick)
             elif order_type_text == "期权合约":
                 contracts_table = "option/contract"
@@ -775,11 +793,63 @@ class BackTest():
                             "value": 0
                         }
                         }
-
-                if position_effect_text == "开仓" and side_text == "买入":
-                    self.buy_option_contract(underlying_tick, contract_tick, contract_setting, volume)
-                if position_effect_text == "平仓" and side_text == "卖出":
-                    self.sell_option_contract(underlying_tick, contract_tick, contract_setting, volume)
+                deposit_coefficient = contract_setting["deposit_coefficient"]["value"]
+                if position_effect_text == "开仓":
+                    if side_text == "买入":
+                        if open_type == 0:
+                            volume = int(volume)
+                        elif open_type == 1:
+                            volume = int((float(volume) / (contract_tick.close * 10000)))
+                        elif open_type == 2:
+                            volume = 1 if volume > 1 else volume
+                            volume = int((volume * self.tc.cash.available / (contract_tick.close * 10000)))
+                        self.buy_option_contract(underlying_tick, contract_tick, contract_setting, volume)
+                    if side_text == "卖出":
+                        if open_type == 0:
+                            volume = int(volume)
+                        elif open_type == 1:
+                            _option_volume = 0
+                            if contract_tick.option_type == 0:
+                                while self.tc.call_option_cash_deposit(contract_tick.strike_price, underlying_tick.close,
+                                                                       contract_tick.settlPrice, abs(
+                                            _option_volume * 10000)) * deposit_coefficient < volume:
+                                    _option_volume += 1
+                            elif contract_tick.option_type == 1:
+                                while self.tc.put_option_cash_deposit(contract_tick.strike_price, underlying_tick.close,
+                                                                      contract_tick.settlPrice, abs(
+                                            _option_volume * 10000)) * deposit_coefficient < volume:
+                                    _option_volume += 1
+                            volume = _option_volume - 1
+                        elif open_type == 2:
+                            option_ratio = float(volume) / 100
+                            option_ratio = 1 if option_ratio > 1 else option_ratio
+                            _option_volume = 0
+                            volume = option_ratio * self.tc.cash.available
+                            if contract_tick.option_type == 0:
+                                while self.tc.call_option_cash_deposit(contract_tick.strike_price, underlying_tick.close,
+                                                                       contract_tick.settlPrice, abs(
+                                                _option_volume * 10000)) * deposit_coefficient < volume:
+                                        _option_volume += 1
+                            elif contract_tick.option_type == 1:
+                                while self.tc.put_option_cash_deposit(contract_tick.strike_price,
+                                                                      underlying_tick.close, contract_tick.settlPrice, abs(
+                                                _option_volume * 10000)) * deposit_coefficient < volume:
+                                        _option_volume += 1
+                            volume = _option_volume - 1
+                        self.short_option_contract(underlying_tick, contract_tick, contract_setting, volume)
+                if position_effect_text == "平仓":
+                    if open_type == 0:
+                        volume = int(volume)
+                    else:
+                        position = self.tc.optionContractPosition.get(contract_id_text, None)
+                        if position:
+                            ratio = volume / 100
+                            ratio = 1 if ratio > 1 else ratio
+                            volume = int(ratio * position.volume)
+                    if side_text == "卖出":
+                        self.sell_option_contract(underlying_tick, contract_tick, contract_setting, volume)
+                    elif side_text == "买入":
+                        self.cover_option_contract(underlying_tick, contract_tick, contract_setting, volume)
 
     def __handleOptionUnderlyingTick(self, id, row, signal, underlying_config):
         open_type = self.config["open_type"]["value"]
@@ -1139,3 +1209,318 @@ class BackTest():
         elif indicator>50:
             index = 10
         return setting.PERFORMANCE_LEVEL[index]
+
+class StrategySetting():
+    def __init__(self, parent, parent_widget, item, column):
+        self.config = parent.config
+        self.parent = parent
+        self.mdi_area = parent.mdi_area
+        loader = QUiLoader()
+        subWindow = QMdiSubWindow()
+        text = item.text(column)
+        whats_this = item.whatsThis(column)
+        if whats_this == "option":
+            bt_type = "backtest_option"
+            title = "期权设置"
+            load_file = "backtest_option.ui"
+            current_node = self.config["options"]
+            setattr(subWindow, "btCurrentNode", self.config["options"])
+        elif whats_this == "option_underlying":
+            title = "标的 %s 的设置" % text
+            load_file = "backtest_option_underlying.ui"
+            bt_type = "backtest_option_underlying"
+            current_node = [i for i in self.config["options"]["underlyings"] if i["name"] == text][0]
+            setattr(subWindow, "btCurrentNode", current_node)
+        elif whats_this == "option_group":
+            title = "期权组 %s 的设置" % text
+            load_file = "backtest_option_group.ui"
+            bt_type = "backtest_option_group"
+            parent_item = item.parent()
+            parent_item_text = parent_item.text(0)
+            underlying_node = [i for i in self.config["options"]["underlyings"] if i["name"] == parent_item_text][0]
+            current_node = [i for i in underlying_node["groups"] if i["name"] == text][0]
+            setattr(subWindow, "btCurrentNode", current_node)
+        elif whats_this == "option_contract":
+            title = "期权合约 %s 的设置" % text
+            load_file = "backtest_option_contract.ui"
+            bt_type = "backtest_option_contract"
+            parent_item = item.parent()
+            parent_item_text = parent_item.text(0)
+            parent_item_whats_this = parent_item.whatsThis(column)
+            if parent_item_whats_this == "option_group":
+                grand_parent_item = parent_item.parent()
+                grand_parent_item_text = grand_parent_item.text(0)
+                underlying_node = \
+                [i for i in self.config["options"]["underlyings"] if i["name"] == grand_parent_item_text][0]
+                group_node = [i for i in underlying_node["groups"] if i["name"] == parent_item_text][0]
+                current_node = [i for i in group_node["contracts"] if i["name"] == text][0]
+                setattr(subWindow, "btCurrentNode", current_node)
+            elif parent_item_whats_this == "option_underlying":
+                underlying_node = [i for i in self.config["options"]["underlyings"] if i["name"] == parent_item_text][0]
+                current_node = [i for i in underlying_node["contracts"] if i["name"] == text][0]
+                setattr(subWindow, "btCurrentNode", current_node)
+        elif whats_this == "strategy":
+            title = "策略基本设置"
+            load_file = "strategy.ui"
+            bt_type = "backtest_strategy"
+        else:
+            return
+        if self.parent.active_backtest_widget(bt_type, title):
+            return
+        setattr(subWindow, "btType", bt_type)
+        setattr(subWindow, "btData", self.config)
+        setattr(subWindow, "btFilePath", None)
+        sub_window_widget = loader.load(load_file, parentWidget=parent_widget)
+        sub_window_widget.setWindowTitle(title)
+        subWindow.setAttribute(Qt.WA_DeleteOnClose)
+        subWindow.setWidget(sub_window_widget)
+        self.mdi_area.addSubWindow(subWindow)
+
+        # 连接各组件信号和展示数据
+        if whats_this == "option":
+            ratio = sub_window_widget.findChild(QSpinBox, "ratio")
+            ratio.setValue(current_node["ratio"]["value"])
+            ratio.valueChanged.connect(lambda event: self.onRatioChanged(event))
+        elif whats_this == "option_underlying":
+            ratio = sub_window_widget.findChild(QSpinBox, "ratio")
+            ratio.setValue(current_node["ratio"]["value"])
+            sub_window_widget.findChild(QSpinBox, "ratio").valueChanged.connect(lambda event: self.onRatioChanged(event))
+
+            underlying_list = sub_window_widget.findChild(QComboBox, "underlying_list")
+            underlying_list.addItems(current_node["id"]["list"])
+            underlying_list.currentIndexChanged.connect(lambda event: self.onUnderlyingListChanged(event))
+            # underlying_list.setCurrentIndex(0)
+
+            signal_list = sub_window_widget.findChild(QComboBox, "signal_list")
+            # signal_list.setCurrentIndex(current_node["signal"]["value"])
+            ids = current_node["id"]["list"]
+            if ids == []:
+                self.parent.messageBox("没有数据")
+                return
+            _sub_window = self.parent.getSubWindowByAttribute("btId", ids[0])
+            if _sub_window is None:
+                self.parent.messageBox("没有找到标的")
+                return
+            columns = _sub_window.btData.columns
+            signal_column = [i for i in columns if i.startswith("signal")]
+            current_node["signal"]["list"] = signal_column
+            signal_list.addItems(signal_column)
+            signal_list.currentIndexChanged.connect(lambda event: self.onSignalChanged(event))
+
+            side = sub_window_widget.findChild(QComboBox, "side")
+            side.setCurrentIndex(current_node["option_side"]["value"])
+            side.currentIndexChanged.connect(lambda event: self.onOptionSideChanged(event))
+
+            volume = sub_window_widget.findChild(QSpinBox, "volume")
+            volume.setValue(current_node["volume"]["value"])
+            volume.valueChanged.connect(lambda event: self.onVolumeChanged(event))
+
+        elif whats_this == "option_group":
+
+            ratio = sub_window_widget.findChild(QSpinBox, "ratio")
+            ratio.setValue(current_node["ratio"]["value"])
+            sub_window_widget.findChild(QSpinBox, "ratio").valueChanged.connect(lambda event: self.onRatioChanged(event))
+
+        elif whats_this == "option_contract":
+            contract_type = sub_window_widget.findChild(QComboBox, "contract_type")
+            contract_type.setCurrentIndex(current_node["option_type"]["value"])
+            contract_type.currentIndexChanged.connect(lambda event: self.onOptionContractTypeChanged(event))
+
+            option_side = sub_window_widget.findChild(QComboBox, "option_side")
+            option_side.setCurrentIndex(current_node["option_side"]["value"])
+            option_side.currentIndexChanged.connect(lambda event: self.onOptionSideChanged(event))
+
+            close_strategy = sub_window_widget.findChild(QComboBox, "close_strategy")
+            close_strategy.setCurrentIndex(current_node["close_method"]["value"])
+            close_strategy.currentIndexChanged.connect(lambda event: self.onCloseMethodChanged(event))
+
+            change_feq = sub_window_widget.findChild(QComboBox, "change_feq")
+            change_feq.setCurrentIndex(current_node["change_feq"]["value"])
+            change_feq.currentIndexChanged.connect(lambda event: self.onChangeFeqChanged(event))
+
+            move_condition = sub_window_widget.findChild(QComboBox, "move_condition")
+            move_condition.setCurrentIndex(current_node["change_condition"]["value"])
+            move_condition.currentIndexChanged.connect(lambda event: self.onChangeConditionChanged(event))
+
+            interval = sub_window_widget.findChild(QComboBox, "interval")
+            interval.setCurrentIndex(current_node["month_interval"]["value"])
+            interval.currentIndexChanged.connect(lambda event: self.onMonthIntervalChanged(event))
+
+            strike_interval = sub_window_widget.findChild(QComboBox, "strike_interval")
+            strike_interval.setCurrentIndex(current_node["strike_interval"]["value"])
+            strike_interval.currentIndexChanged.connect(lambda event: self.onStrikeIntervalChanged(event))
+
+            smart_match = sub_window_widget.findChild(QComboBox, "smart_match")
+            smart_match.setCurrentIndex(current_node["smart_selection"]["value"])
+            smart_match.currentIndexChanged.connect(lambda event: self.onSmartSelectionChanged(event))
+
+            volume = sub_window_widget.findChild(QSpinBox, "volume")
+            volume.setValue(current_node["volume"]["value"])
+            volume.valueChanged.connect(lambda event: self.onVolumeChanged(event))
+
+            deposit_ratio = sub_window_widget.findChild(QDoubleSpinBox, "deposit_ratio")
+            deposit_ratio.setValue(current_node["deposit_coefficient"]["value"])
+            deposit_ratio.valueChanged.connect(lambda event: self.onDepositCoefficient(event))
+
+            delta = sub_window_widget.findChild(QDoubleSpinBox, "delta")
+            delta.setValue(current_node["delta"]["value"])
+            delta.valueChanged.connect(lambda event: self.onDeltaChanged(event))
+
+            gamma = sub_window_widget.findChild(QDoubleSpinBox, "gamma")
+            gamma.setValue(current_node["gamma"]["value"])
+            gamma.valueChanged.connect(lambda event: self.onGammaChanged(event))
+
+            theta = sub_window_widget.findChild(QDoubleSpinBox, "theta")
+            theta.setValue(current_node["theta"]["value"])
+            theta.valueChanged.connect(lambda event: self.onThetaChanged(event))
+
+            vega = sub_window_widget.findChild(QDoubleSpinBox, "vega")
+            vega.setValue(current_node["vega"]["value"])
+            vega.valueChanged.connect(lambda event: self.onVegaChanged(event))
+
+            rho = sub_window_widget.findChild(QDoubleSpinBox, "rho")
+            rho.setValue(current_node["rho"]["value"])
+            rho.valueChanged.connect(lambda event: self.onRhoChanged(event))
+
+            ivix = sub_window_widget.findChild(QDoubleSpinBox, "ivix")
+            ivix.setValue(current_node["ivix"]["value"])
+            ivix.valueChanged.connect(lambda event: self.onIvixChanged(event))
+
+        elif whats_this == "strategy":
+            account_folder = os.path.normpath(os.path.join(ROOT, "accounts"))
+            account_files = [os.path.splitext(i)[0] for i in os.listdir(account_folder) if
+                             os.path.splitext(i)[-1] == ".bt"]
+            account_list = sub_window_widget.findChild(QComboBox, "account")
+            account_list.addItems(account_files)
+            account_list.currentTextChanged.connect(lambda event:self.onBackTestRunAccountChanged(event))
+
+            open_type_list = sub_window_widget.findChild(QComboBox, "open_type")
+            open_type_list.currentIndexChanged.connect(lambda event: self.onBackTestOpenTypeChanged(event))
+
+            table_view = sub_window_widget.findChild(QTableWidget)
+            self.initBacktestAccountTable(table_view, account_files[0])
+
+        subWindow.show()
+
+    def onOptionContractTypeChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["option_type"]["value"] = index
+
+    def onOptionSideChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["option_side"]["value"] = index
+
+    def onCloseMethodChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["close_method"]["value"] = index
+
+    def onChangeFeqChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["change_feq"]["value"] = index
+
+    def onChangeConditionChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["change_condition"]["value"] = index
+
+    def onMonthIntervalChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["month_interval"]["value"] = index
+
+    def onStrikeIntervalChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["strike_interval"]["value"] = index
+
+    def onSmartSelectionChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["smart_selection"]["value"] = index
+
+    def onDepositCoefficient(self, value):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["deposit_coefficient"]["value"] = value
+
+    def onDeltaChanged(self, value):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["delta"]["value"] = value
+
+    def onGammaChanged(self, value):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["gamma"]["value"] = value
+
+    def onThetaChanged(self, value):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["theta"]["value"] = value
+
+    def onVegaChanged(self, value):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["vega"]["value"] = value
+
+    def onRhoChanged(self, value):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["rho"]["value"] = value
+
+    def onIvixChanged(self, value):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["ivix"]["value"] = value
+
+    def onRatioChanged(self, value):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["ratio"]["value"] = value
+
+    def onUnderlyingListChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["id"]["value"] = index
+        text = current_node["id"]["list"][index]
+        signal_list = self.mdi_area.currentSubWindow().findChild(QComboBox, "signal_list")
+        signal_list.clear()
+        sub_window = self.parent.getSubWindowByAttribute("btId", text)
+        data = sub_window.btData
+        signal_list.addItems([i for i in data.columns if i.startswith("signal")])
+
+    def onVolumeChanged(self, value):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["volume"]["value"] = value
+
+    def onSignalChanged(self, index):
+        current_node = getattr(self.mdi_area.currentSubWindow(), "btCurrentNode")
+        current_node["signal"]["value"] = index
+
+    def onBackTestRunAccountChanged(self, value):
+        file_name = os.path.normpath(os.path.join(ROOT, "accounts", "%s.bt" % value))
+        with open(file_name, "rb") as f:
+            data = pickle.load(f)
+            self.config["account"] = data
+            table_widget = self.mdi_area.currentSubWindow().findChild(QTableWidget)
+            table_widget.setRowCount(len(data.keys())-1)
+            i = 0
+            for key in data.keys():
+                if key == "name":
+                    continue
+                value = data[key]
+                key_item = QTableWidgetItem(key)
+                value_item = QTableWidgetItem(str(value))
+                table_widget.setItem(i, 0, key_item)
+                table_widget.setItem(i, 1, value_item)
+                i += 1
+            # item = QTableWidgetItem(username)
+            # item = (username)
+
+    def onBackTestOpenTypeChanged(self, value):
+        self.config["open_type"]["value"] = value
+
+    def initBacktestAccountTable(self, widget, filename):
+        file_name = os.path.normpath(os.path.join(ROOT, "accounts", "%s.bt" % filename))
+        with open(file_name, "rb") as f:
+            data = pickle.load(f)
+            self.config["account"] = data
+            table_widget = widget
+            table_widget.setRowCount(len(data.keys())-1)
+            i = 0
+            for key in data.keys():
+                if key == "name":
+                    continue
+                value = data[key]
+                key_item = QTableWidgetItem(key)
+                value_item = QTableWidgetItem(str(value))
+                table_widget.setItem(i, 0, key_item)
+                table_widget.setItem(i, 1, value_item)
+                i += 1

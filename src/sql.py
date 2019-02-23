@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # print(read("option/underlyings/510050.XSHG", where="date='2016-06-01 00:00:00'"))
     # print(read("option/underlyings/M1803", select="close", where="date='2017-03-15 00:00:00'").at[0, "close"])
     # print(read("option/contracts/10001307").columns)
-    d = read('option/underlyings/510050.XSHG')
+    d = read('option/contract')
     print(d.columns)
     print(d.iloc[0,:])
 
