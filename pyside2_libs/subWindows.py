@@ -271,11 +271,6 @@ class BackTest():
         self.mdi_area = self.parent.mdi_area
 
         self.tc = None
-        self.orders = {}
-        self.positions = {}
-        self.cashs = {}
-        self.label_text = {}
-        self.option_filter_dict = {}
 
         subWindow = QMdiSubWindow()
         setattr(subWindow, "btType", 0)
@@ -296,11 +291,9 @@ class BackTest():
         select_account.addItems(account_files)
         select_account.currentTextChanged.connect(self.onBacktestRunAccountChanged2)
         select_account.setCurrentIndex(0)
-        file_name = os.path.normpath(os.path.join(self.root, "accounts", "%s.bt" % account_files[0]))
-        with open(file_name, "rb") as f:
-            data = pickle.load(f)
-            self.config["account"] = data
-            self.tc = tradeCenter.TradeCenter(data)
+
+        open_type_list = backtest.findChild(QComboBox, "open_type")
+        open_type_list.currentIndexChanged.connect(lambda event: self.onOpenTypeChanged(event))
 
         start_button = backtest.findChild(QPushButton)
         start_button.clicked.connect(lambda event:self.onBacktestRun())
@@ -309,13 +302,6 @@ class BackTest():
         self.mdi_area.addSubWindow(subWindow)
         subWindow.show()
         self.backtest = backtest
-
-        # if account:
-        #     subWindow.show()
-        #     self.backtest = backtest
-        #     self.tc = tradeCenter.TradeCenter(account)
-        # else:
-        #     self.messageBox("请先设置测试账户后再打开")
 
     def onResultTreeDoubleClicked(self, item, column):
         text = item.text(column)
@@ -362,10 +348,10 @@ class BackTest():
             amount.setValue(data[1].amount)
 
             res_volume = order_status.findChild(QSpinBox, "res_volume")
-            res_volume.setValue(data[1].volume)
+            res_volume.setValue(abs(data[1].volume))
 
             volume = order_status.findChild(QSpinBox, "volume")
-            volume.setValue(data[0].volume)
+            volume.setValue(abs(data[0].volume))
 
             subWindow = QMdiSubWindow()
             subWindow.setAttribute(Qt.WA_DeleteOnClose)
@@ -374,15 +360,20 @@ class BackTest():
 
             order_status.show()
 
+    def onOpenTypeChanged(self, value):
+        self.config["open_type"]["value"] = value
+
     def onBacktestRunAccountChanged2(self, value):
-        file_name = os.path.normpath(os.path.join(self.root, "accounts", "%s.bt" % value))
-        with open(file_name, "rb") as f:
-            data = pickle.load(f)
-            self.config["account"] = data
-            self.tc = tradeCenter.TradeCenter(data)
+        # file_name = os.path.normpath(os.path.join(self.root, "accounts", "%s.bt" % value))
+        # with open(file_name, "rb") as f:
+        #     data = pickle.load(f)
+        #     self.config["account"] = data
+        #     self.tc = tradeCenter.TradeCenter(data)
+        pass
 
     def onBacktestRun(self):
 
+        self.beforeRun()
         start_date = self.backtest.findChild(QDateEdit, "start_date").date()
         end_date = self.backtest.findChild(QDateEdit, "end_date").date()
         current_date = start_date
@@ -434,9 +425,26 @@ class BackTest():
         self.afterRun()
         return
 
-    def afterRun(self):
+    def beforeRun(self):
+
+
+        self.orders = {}
+        self.positions = {}
+        self.cashs = {}
+        self.label_text = {}
+        self.option_filter_dict = {}
+
+        account_name = self.backtest.findChild(QComboBox, "account").currentText()
+        file_name = os.path.normpath(os.path.join(self.root, "accounts", "%s.bt" % account_name))
+        with open(file_name, "rb") as f:
+            data = pickle.load(f)
+            self.config["account"] = data
+            self.tc = tradeCenter.TradeCenter(data)
         result_tree = self.backtest.findChild(QTreeWidget)
         result_tree.clear()
+
+    def afterRun(self):
+        result_tree = self.backtest.findChild(QTreeWidget)
 
         for text in ["资产", "仓位", "订单"]:
             item = QTreeWidgetItem(result_tree)
@@ -479,6 +487,8 @@ class BackTest():
         self.backtest.findChild(QLineEdit, "win_loss").setText(str(self.tc.performance.win_loss))
         self.backtest.findChild(QLineEdit, "final_capital").setText(str(self.tc.performance.final_capital))
         # self.backtest.findChild(QLineEdit, "performance_indicator").setText(str(performance_indicator))
+
+        self.tc = None
 
     def updateMarket(self):
         self.tc.cash.fpnl = 0
@@ -1259,10 +1269,10 @@ class StrategySetting():
                 underlying_node = [i for i in self.config["options"]["underlyings"] if i["name"] == parent_item_text][0]
                 current_node = [i for i in underlying_node["contracts"] if i["name"] == text][0]
                 setattr(subWindow, "btCurrentNode", current_node)
-        elif whats_this == "strategy":
-            title = "策略基本设置"
-            load_file = "strategy.ui"
-            bt_type = "backtest_strategy"
+        # elif whats_this == "strategy":
+        #     title = "策略基本设置"
+        #     load_file = "strategy.ui"
+        #     bt_type = "backtest_strategy"
         else:
             return
         if self.parent.active_backtest_widget(bt_type, title):
@@ -1386,19 +1396,19 @@ class StrategySetting():
             ivix.setValue(current_node["ivix"]["value"])
             ivix.valueChanged.connect(lambda event: self.onIvixChanged(event))
 
-        elif whats_this == "strategy":
-            account_folder = os.path.normpath(os.path.join(ROOT, "accounts"))
-            account_files = [os.path.splitext(i)[0] for i in os.listdir(account_folder) if
-                             os.path.splitext(i)[-1] == ".bt"]
-            account_list = sub_window_widget.findChild(QComboBox, "account")
-            account_list.addItems(account_files)
-            account_list.currentTextChanged.connect(lambda event:self.onBackTestRunAccountChanged(event))
-
-            open_type_list = sub_window_widget.findChild(QComboBox, "open_type")
-            open_type_list.currentIndexChanged.connect(lambda event: self.onBackTestOpenTypeChanged(event))
-
-            table_view = sub_window_widget.findChild(QTableWidget)
-            self.initBacktestAccountTable(table_view, account_files[0])
+        # elif whats_this == "strategy":
+        #     account_folder = os.path.normpath(os.path.join(ROOT, "accounts"))
+        #     account_files = [os.path.splitext(i)[0] for i in os.listdir(account_folder) if
+        #                      os.path.splitext(i)[-1] == ".bt"]
+        #     account_list = sub_window_widget.findChild(QComboBox, "account")
+        #     account_list.addItems(account_files)
+        #     account_list.currentTextChanged.connect(lambda event:self.onBackTestRunAccountChanged(event))
+        #
+        #     open_type_list = sub_window_widget.findChild(QComboBox, "open_type")
+        #     open_type_list.currentIndexChanged.connect(lambda event: self.onBackTestOpenTypeChanged(event))
+        #
+        #     table_view = sub_window_widget.findChild(QTableWidget)
+        #     self.initBacktestAccountTable(table_view, account_files[0])
 
         subWindow.show()
 
@@ -1503,9 +1513,6 @@ class StrategySetting():
                 i += 1
             # item = QTableWidgetItem(username)
             # item = (username)
-
-    def onBackTestOpenTypeChanged(self, value):
-        self.config["open_type"]["value"] = value
 
     def initBacktestAccountTable(self, widget, filename):
         file_name = os.path.normpath(os.path.join(ROOT, "accounts", "%s.bt" % filename))

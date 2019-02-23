@@ -54,16 +54,11 @@ class BT(QObject):
 
         self.filePath = None
         self.config = setting.SETTINGS
-
-        ui_file = QFile(ui_file)
-        ui_file.open(QFile.ReadOnly)
-
         loader = QUiLoader()
         self.window = loader.load(ui_file)
         self.window.setWindowTitle("回测者")
         #self.window.setWindowIcon("")
-        ui_file.close()
-        self.window.show()
+
         self.guid = get_uuid()
 
         self.loadWidget()
@@ -767,7 +762,6 @@ class BT(QObject):
     def onBacktest(self):
 
         subWindows.BackTest(self, self.window)
-        #self._show_backtest_sub_window("开始回测", None, id=0)
 
     def getSubWindowByAttribute(self, key, value):
         return self.__getSubWindowByAttribute(key, value)

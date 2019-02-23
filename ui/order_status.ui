@@ -151,6 +151,9 @@
           </item>
           <item>
            <widget class="QSpinBox" name="volume">
+            <property name="minimum">
+             <number>0</number>
+            </property>
             <property name="maximum">
              <number>10000000</number>
             </property>

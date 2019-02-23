@@ -52,7 +52,6 @@
     <property name="title">
      <string>文件</string>
     </property>
-    <addaction name="actionnew"/>
     <addaction name="actionopen"/>
     <addaction name="actionsave"/>
     <addaction name="actionsave_as"/>
@@ -86,11 +85,6 @@
     <addaction name="separator"/>
     <addaction name="actionbacktest_history_data"/>
    </widget>
-   <widget class="QMenu" name="view">
-    <property name="title">
-     <string>显示</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="help">
     <property name="title">
      <string>帮助</string>
@@ -122,7 +116,6 @@
    <addaction name="strategy"/>
    <addaction name="backtest"/>
    <addaction name="menu"/>
-   <addaction name="view"/>
    <addaction name="help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>

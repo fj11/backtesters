@@ -8,7 +8,8 @@ added_files = [
                 ('icon', 'icon'),
                 ('ui/*.ui', 'ui'),
                 ('accounts/*.bt', 'accounts'),
-                ('tmp/*', 'tmp')
+                ('tmp/*', 'tmp'),
+                ('images/*', 'images')
             ]
 
 a = Analysis(['backtester.py'],
