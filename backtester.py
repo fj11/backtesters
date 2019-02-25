@@ -1,3 +1,4 @@
+# encoding: utf-8
 
 import os, sys
 from PySide2.QtWidgets import QApplication, QSplashScreen

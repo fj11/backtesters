@@ -1,7 +1,6 @@
+# encoding: utf-8
 
-import re
 import os
-import sys
 import uuid
 import pickle
 
@@ -12,14 +11,12 @@ from PySide2.QtXml import QDomNode
 ############################################
 
 from PySide2.QtUiTools import QUiLoader
-from PySide2 import QtCore
-from PySide2.QtWidgets import QApplication, QMdiArea, QTreeWidgetItem, \
-    QMessageBox, QMdiSubWindow, QTableView, QToolBox,\
-    QTableWidget, QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
+from PySide2.QtWidgets import QMdiArea, QTreeWidgetItem, \
+    QMessageBox, QTableView, QToolBox,\
+    QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
     QTreeWidget, QSpinBox, QPushButton, QFileDialog,\
-    QMenu, QInputDialog, QDoubleSpinBox, QTableWidgetItem, \
-    QAbstractButton, QAbstractItemView, QSlider
-from PySide2.QtCore import QFile, QObject, Qt
+    QMenu, QInputDialog, QSlider
+from PySide2.QtCore import QObject, Qt
 from PySide2 import QtGui
 
 from src import sql, pandas_mode, setting
@@ -236,8 +233,7 @@ class BT(QObject):
                 self.mdi_area.setActiveSubWindow(i)
                 return True
 
-    def onCornerButtonRightClicked(self):
-        print(1111)
+
 
     def onBackTestTreeRightClicked(self):
         menu = QMenu(self.backtest_tree)
@@ -783,7 +779,6 @@ class BT(QObject):
         dialogs.Signal(self, self.window, current_window)
 
     def onActionMSignal(self):
-
         subWindows.ManualSignal(self, self.window, self.mdi_area)
 
     def onActionFunction(self):
@@ -793,62 +788,6 @@ class BT(QObject):
             self.messageBox("请先打开数据")
             return
         dialogs.Function(self, self.window, current_window)
-        return
-
-    def onActionIndicator(self):
-        print(2222222222)
-
-    def onTableViewColumnClicked(self, index, table_view):
-        # up = self.window.findChild(QAction, "action_up")
-        # down = self.window.findChild(QAction, "action_down")
-        roll = self.window.findChild(QAction, "action_roll")
-        delete = self.window.findChild(QAction, "action_delete_column")
-
-        menu = QMenu(table_view)
-        menu.addAction(roll)
-        menu.addAction(delete)
-        menu.popup(QtGui.QCursor.pos())
-        return
-
-    def onTableViewRowDoubleClicked(self, index):
-        childSubWindow = getattr(self.mdi_area.currentSubWindow(), "childSubWindow")
-        if not childSubWindow:
-            return
-        data = getattr(self.mdi_area.currentSubWindow(), "btData")
-        id = getattr(self.mdi_area.currentSubWindow(), "btId")
-        title = childSubWindow.get("title")
-        type = childSubWindow.get("type")
-        tableName = childSubWindow.get("table_name")
-        where = childSubWindow.get("where")
-        select = childSubWindow.get("select", "*")
-        hidden_columns = childSubWindow.get("hidden_columns")
-        index_column = childSubWindow.get("index_column")
-        csw = childSubWindow.get("childSubWindow")
-        has_column_name = re.search("%(\S*)%", tableName)
-        if has_column_name:
-            column_name = has_column_name.group(1)
-            column_value = data.iloc[index,:]
-            column_value = column_value[column_name]
-            tableName = re.sub("%\S*%", column_value, column_value)
-        if type == "option_underlying_table":
-            self._get_option_underlying_data(column_value, column_value)
-        elif type == "option_contract_table":
-            self._get_option_contract_by_date(id, tableName)
-        elif type == "future_contract_table":
-            self._get_future_contract_data(column_value, column_value)
-
-        return
-
-    def onTableViewColumnDoubleClicked(self, index, evt):
-        currentSubWindow = self.mdi_area.currentSubWindow()
-        tableView = currentSubWindow.findChild(QTableView)
-        selectedColumns = [selection.column() for selection in tableView.selectionModel().selectedColumns()]
-        btData = getattr(currentSubWindow, "btData")
-        selectedData = btData.iloc[:, selectedColumns]
-        subWindows.Plot(selectedData, self.window, self.mdi_area)
-        return
-
-    def onTableViewCellDoubleClicked(self, index):
         return
 
     def onOptionListDoubleClicked(self):
@@ -907,12 +846,15 @@ class BT(QObject):
             data = sql.read(table, where=where)
         else:
             data = sql.read(table)
-        self._show_table_sub_window(name, data, id=id,
+        if data.empty:
+            self.messageBox("数据库中没有该数据")
+            return
+        else:
+            subWindows.GridView(self, name, data, id=id,
                                     hidden_columns=hidden_columns,
                                     index_column='date',
                                     childSubWindow=childSubWindow,
-                                    type="option_underlying"
-                                    )
+                                    type="option_underlying")
 
     def _get_future_contract(self, name, id):
         table = "future/contract"
@@ -934,7 +876,11 @@ class BT(QObject):
         data.dropna(axis=0, how='any', inplace=True)
         #data.drop_duplicates("underlying_order_book_id", inplace=True)
         data.index = [i for i in range(int(len(data.index)))]
-        self._show_table_sub_window(name, data, id=id,
+        if data.empty:
+            self.messageBox("数据库中没有该数据")
+            return
+        else:
+            subWindows.GridView(self, name, data, id=id,
                                     hidden_columns=hidden_columns,
                                     childSubWindow={
                                         "title": id,
@@ -975,7 +921,11 @@ class BT(QObject):
         data.dropna(axis=0, how='any', inplace=True)
         data.drop_duplicates("underlying_order_book_id", inplace=True)
         data.index = [i for i in range(int(len(data.index)))]
-        self._show_table_sub_window(name, data, id=id,
+        if data.empty:
+            self.messageBox("数据库中没有该数据")
+            return
+        else:
+            subWindows.GridView(self, name, data, id=id,
                                     hidden_columns=hidden_columns,
                                     childSubWindow={
                                         "title":id,
@@ -1005,7 +955,11 @@ class BT(QObject):
                 dataRow = sql.read(table, where="date='%s'" % date)
                 dataRow["symbol"] = symbol
                 showData = showData.append(dataRow, ignore_index=True, sort=True)
-        self._show_table_sub_window("标的%s在%s日的期权全部合约" % (underlying_symbol, date), showData, index_column="symbol", hidden_columns=["symbol"], id=1)
+        if showData.empty:
+            self.messageBox("数据库中没有该数据")
+            return
+        else:
+            subWindows.GridView(self, "标的%s在%s日的期权全部合约" % (underlying_symbol, date), showData, index_column="symbol", hidden_columns=["symbol"], id=1)
 
     def _get_future_contract_data(self, name, id):
         table = "future/contracts/%s" % id
@@ -1031,129 +985,12 @@ class BT(QObject):
                           'open_interest'
                           ]
         data = sql.read(table)
-        self._show_table_sub_window(name, data, id=id,
+        if data.empty:
+            self.messageBox("数据库中没有该数据")
+            return
+        else:
+            subWindows.GridView(self, name, data, id=id,
                                     hidden_columns=hidden_columns,
                                     index_column='date',
                                     childSubWindow=childSubWindow,
-                                    type="option_underlying"
-                                    )
-
-    def _show_list_sub_window(self, title, data):
-        if data.empty:
-            self.messageBox("数据库中没有该数据")
-            return
-        listView = QListWidget()
-        listView.setWindowTitle(title)
-        listView.addItems(data)
-        subWindow = QMdiSubWindow()
-        subWindow.btData = data
-        subWindow.setWidget(listView)
-        self.mdi_area.addSubWindow(subWindow)
-        subWindow.show()
-
-    def _show_table_sub_window(self, title, data, id=0, hidden_columns=None, index_column=None, childSubWindow={}, type=1):
-        """
-
-        :param title: Window title
-        :param data: Table show data
-        :param hidden_columns: Columns to be hidden
-        :param index_column: which column is index column
-        :param childSubWindow: When double click each row, which child table should be opened
-                Sample:  {
-                            "title":"",
-                            "type": "table",
-                            "table_name": "option/underlyings/%underlying_order_book_id%",
-                            "where:"",
-                            "select":"",
-                            "hidden_columns":[],
-                            "index_column":[],
-                            "childSubWindow":{},
-                        }
-
-        :return:
-        """
-        if data.empty:
-            self.messageBox("数据库中没有该数据")
-            return
-        if index_column:
-            data.index = list(data[index_column])
-            data.index.name = index_column
-        subWindow = QMdiSubWindow()
-        setattr(subWindow, "btData", data)
-        setattr(subWindow, "btId", id)
-        setattr(subWindow, "btType", type)
-        setattr(subWindow, "btFilePath", None)
-        setattr(subWindow, "childSubWindow", childSubWindow)
-        setattr(subWindow, "hidden_columns", hidden_columns)
-
-        tableView = QTableView()
-        #双击列的信号
-        tableView.horizontalHeader().sectionDoubleClicked.connect(lambda event: self.onTableViewColumnDoubleClicked(event, None))
-        #双击行的信号
-        tableView.verticalHeader().sectionDoubleClicked.connect(self.onTableViewRowDoubleClicked)
-        #双击cell的信号
-        tableView.doubleClicked.connect(self.onTableViewCellDoubleClicked)
-
-        #右键列
-        headers = tableView.horizontalHeader()
-        headers.setContextMenuPolicy(Qt.CustomContextMenu)
-        headers.customContextMenuRequested.connect(lambda event: self.onTableViewColumnClicked(event, tableView))
-        headers.setSelectionMode(QAbstractItemView.SingleSelection)
-
-        cornerButton = tableView.findChild(QAbstractButton)
-        cornerButton.customContextMenuRequested.connect(self.onCornerButtonRightClicked)
-
-        tableView.setWindowTitle(title)
-
-        proxyModel = QtCore.QSortFilterProxyModel(subWindow)
-        mode = pandas_mode.PandasModel(data)
-        proxyModel.setSourceModel(mode)
-        tableView.setModel(proxyModel)
-
-        self._hide_columns(tableView, data, hidden_columns)
-
-        systemMenu = subWindow.systemMenu()
-        last_action = systemMenu.actions()[-1]
-        display_setting = self.window.findChild(QAction, "display_action")
-        systemMenu.insertAction(last_action, display_setting)
-
-        subWindow.setAttribute(Qt.WA_DeleteOnClose)
-        subWindow.setWidget(tableView)
-        self.mdi_area.addSubWindow(subWindow)
-
-        subWindow.show()
-
-    def _hide_columns(self, table_view, data, hidden_columns):
-        columns_list = list(data.columns)
-        if hidden_columns:
-            for i in range(len(columns_list)):
-                name = columns_list[i]
-                if name in hidden_columns:
-                    table_view.setColumnHidden(i, True)
-
-    def display_table(self, data, currentSubWindow=None):
-        self.__display_table(data, currentSubWindow)
-
-    def __display_table(self, data, currentSubWindow=None):
-        if currentSubWindow is None:
-            currentSubWindow = self.mdi_area.currentSubWindow()
-        tableView = currentSubWindow.findChild(QTableView)
-        tableView.clearSpans()
-        mode = pandas_mode.PandasModel(data)
-        tableView.setModel(mode)
-        columns_list = list(data.columns)
-        hidden_columns = getattr(currentSubWindow, "hidden_columns")
-        for i in columns_list:
-            index = columns_list.index(i)
-            if i in hidden_columns:
-                tableView.setColumnHidden(index, True)
-            else:
-                tableView.setColumnHidden(index, False)
-
-
-
-if __name__ == '__main__':
-
-    app = QApplication(sys.argv)
-    form = BT('main.ui')
-    sys.exit(app.exec_())
+                                    type="option_underlying")

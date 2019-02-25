@@ -4,19 +4,15 @@ import os, pickle
 from PySide2.QtUiTools import QUiLoader
 
 from PySide2.QtWidgets import QTreeWidgetItem, \
-    QMessageBox, QMdiSubWindow, QTableView, QToolBox, QFrame, QListView, \
-    QTableWidget, QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
-    QTabWidget, QTreeWidget, QSpinBox, QLabel, QGroupBox, QPushButton, QFileDialog,\
-    QMenu, QInputDialog, QDoubleSpinBox, QTableWidgetItem, QDateEdit, QProgressBar, \
-    QToolBar, QCalendarWidget, QWidget, QAbstractButton, QAbstractItemView, QSlider
-from PySide2.QtCore import QFile, QObject, Qt
+    QListWidget, QComboBox, QDialogButtonBox, QLineEdit, \
+    QTabWidget, QTreeWidget, QSpinBox, QLabel, QGroupBox, QPushButton,\
+    QDoubleSpinBox
 
 import talib
 from talib import abstract
 import numpy as np
 
 from src import setting
-
 
 class Function():
 
