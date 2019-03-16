@@ -42,8 +42,12 @@ class PandasModel(QtCore.QAbstractTableModel):
             dtype = self._df[col].dtype
             if dtype != object:
                 value = None if value == '' else dtype.type(value)
-        self._df.set_value(row, col, value)
-        return True
+        if value not in [1, 0, -1]:
+            return False
+        else:
+            self._df.at[row, col] = value
+            #self._df.set_value(row, col, value)
+            return True
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return len(self._df.index)
@@ -57,3 +61,10 @@ class PandasModel(QtCore.QAbstractTableModel):
         self._df.sort_values(colname, ascending= order == QtCore.Qt.AscendingOrder, inplace=True)
         self._df.reset_index(inplace=True, drop=True)
         self.layoutChanged.emit()
+
+    def flags(self, index):
+        row, column, data = index.row(), index.column(), index.data()
+        if self._df.columns[column].lower() == "signal":
+            return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        else:
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable

@@ -1568,6 +1568,7 @@ class GridView():
         setattr(subWindow, "hidden_columns", hidden_columns)
 
         tableView = QTableView()
+
         # 双击列的信号
         tableView.horizontalHeader().sectionDoubleClicked.connect(
             lambda event: self.onTableViewColumnDoubleClicked(event, None))
@@ -1671,6 +1672,9 @@ class GridView():
         return
 
     def onTableViewCellDoubleClicked(self, index):
+        # print(index.row(), index.column(), index.data())
+        # data = getattr(self.mdi_area.currentSubWindow(), "btData")
+        # print(data)
         return
 
     def onTableViewColumnClicked(self, index, table_view):

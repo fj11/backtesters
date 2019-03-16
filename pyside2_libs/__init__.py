@@ -994,3 +994,22 @@ class BT(QObject):
                                     index_column='date',
                                     childSubWindow=childSubWindow,
                                     type="option_underlying")
+
+    def display_table(self, data, currentSubWindow=None):
+        self.__display_table(data, currentSubWindow)
+
+    def __display_table(self, data, currentSubWindow=None):
+        if currentSubWindow is None:
+            currentSubWindow = self.mdi_area.currentSubWindow()
+        tableView = currentSubWindow.findChild(QTableView)
+        tableView.clearSpans()
+        mode = pandas_mode.PandasModel(data)
+        tableView.setModel(mode)
+        columns_list = list(data.columns)
+        hidden_columns = getattr(currentSubWindow, "hidden_columns")
+        for i in columns_list:
+            index = columns_list.index(i)
+            if i in hidden_columns:
+                tableView.setColumnHidden(index, True)
+            else:
+                tableView.setColumnHidden(index, False)
