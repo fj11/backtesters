@@ -12,7 +12,7 @@ from PySide2.QtWidgets import QTreeWidgetItem, \
     QTableWidget, QAction, QComboBox, QLineEdit, \
     QTreeWidget, QSpinBox, QPushButton,\
     QMenu, QDoubleSpinBox, QTableWidgetItem, QDateEdit, QProgressBar, \
-    QCalendarWidget, QWidget, QAbstractButton, QAbstractItemView
+    QCalendarWidget, QWidget, QAbstractButton, QAbstractItemView, QCheckBox, QTextEdit
 from PySide2.QtCore import Qt
 from PySide2 import QtGui
 
@@ -307,12 +307,13 @@ class BackTest():
         whats_this = item.whatsThis(column)
         if text == "资产":
             data = pd.DataFrame(self.cashs)
-            self.parent._show_table_sub_window("资产详情", data)
+            data.index = data.date
+            GridView(self.parent, "资产详情", data)
         if whats_this == "position":
             id = item.parent().text(column)
             data = self.positions[id][text]
             data = pd.DataFrame(data)
-            self.parent._show_table_sub_window("%s 的仓位详情" % id, data, hidden_columns=["account_id", "short_name"])
+            GridView(self.parent, "%s 的仓位详情" % id, data, hidden_columns=["account_id", "short_name"])
         elif whats_this == "order":
             id = item.parent().text(column)
             data = self.orders[id][text][0]
@@ -332,10 +333,10 @@ class BackTest():
             side.setText(str(data[0].side))
 
             sending_time = order_status.findChild(QDateEdit, "sending_time")
-            sending_time.setDate(QtCore.QDate.fromString(data[0].sending_time, "yyyy-MM-dd"))
+            sending_time.setDate(QtCore.QDate.fromString(data[0].sending_time, "yyyy-MM-dd 00:00:00"))
 
             transact_time = order_status.findChild(QDateEdit, "transact_time")
-            transact_time.setDate(QtCore.QDate.fromString(data[1].transact_time, "yyyy-MM-dd"))
+            transact_time.setDate(QtCore.QDate.fromString(data[1].transact_time, "yyyy-MM-dd 00:00:00"))
 
             price = order_status.findChild(QDoubleSpinBox, "price")
             price.setValue(data[0].price)
@@ -351,6 +352,12 @@ class BackTest():
 
             volume = order_status.findChild(QSpinBox, "volume")
             volume.setValue(abs(data[0].volume))
+
+            status = order_status.findChild(QLineEdit, "status")
+            status.setText(str(data[1].ord_rej_reason))
+
+            reason = order_status.findChild(QLineEdit, "reason")
+            reason.setText(data[1].ord_rej_reason_detail)
 
             subWindow = QMdiSubWindow()
             subWindow.setAttribute(Qt.WA_DeleteOnClose)
@@ -395,7 +402,7 @@ class BackTest():
                 underlyings = option["underlyings"]
                 for underlying in underlyings:
                     id = underlying["id"]["list"][underlying["id"]["value"]]
-                    sub_window = self.__getSubWindowByAttribute("btId", id)
+                    sub_window = self.parent.getSubWindowByAttribute("btId", id)
                     data = sub_window.btData
                     row = data[data.date == current_date_str]
                     row = row.T.squeeze()
@@ -878,7 +885,7 @@ class BackTest():
             position = self.tc.optionUnderlyingPosition.get(id, None)
             if position:
                 volume = position.volume
-                self.parent.sell_option_underlying(id, volume, row)
+                self.sell_option_underlying(id, volume, row)
 
     def __handleOptionContractTick(self, id, tick, signal, option_dataframe, option_contract_setting,
                                    option_group_setting={},
@@ -942,7 +949,7 @@ class BackTest():
                     self.short_option_contract(tick, option, option_contract_setting, option_volume)
         elif signal == -1:
             for id in option_contract_setting["ids"]:
-                position = self.tc.optionContractPosition[id, None]
+                position = self.tc.optionContractPosition.get(id, None)
                 volume = position.volume
                 if position:
                     tick_table = "option/contracts/%s" % id
@@ -961,7 +968,7 @@ class BackTest():
                 contract_dataframe = option_dataframe[option_dataframe["order_book_id"] == id]
                 contract_dataframe = contract_dataframe.T.squeeze()
                 if tick.date[:10] == contract_dataframe.maturity_date:
-                    position = self.tc.optionContractPosition[id, None]
+                    position = self.tc.optionContractPosition.get(id, None)
                     tick_table = "option/contracts/%s" % id
                     option_tick = sql.read(tick_table, where="date='%s'" % tick.date)
                     option_tick = option_tick.T.squeeze()
@@ -1691,3 +1698,36 @@ class GridView():
 
     def onCornerButtonRightClicked(self):
         print(1111)
+
+class RQData():
+
+    def __init__(self, parent, parent_widget, mdi_area):
+        self.parent = parent
+        loader = QUiLoader()
+        rqdata_ui = loader.load('rqdata.ui', parentWidget=parent_widget)
+        rqdata_ui.setWindowTitle("数据更新")
+        self.rqdata_ui = rqdata_ui
+
+        self.option_checkbox = rqdata_ui.findChild(QCheckBox, "option")
+        self.future_checkbox = rqdata_ui.findChild(QCheckBox, "future")
+        self.stock_checkbox = rqdata_ui.findChild(QCheckBox, "stock")
+
+        self.update_button = rqdata_ui.findChild(QPushButton, "update_button")
+        self.update_button.clicked.connect(lambda event: self.update())
+
+        self.message_box = rqdata_ui.findChild(QTextEdit, "textEdit")
+
+        mdi_area.addSubWindow(rqdata_ui)
+        rqdata_ui.show()
+
+    def update(self):
+        from src import rqdata
+        self.message_box.clear()
+        if self.option_checkbox.checkState():
+            rqdata.update_option(self.message_box)
+        if self.stock_checkbox.checkState():
+            rqdata.update_stock(self.message_box)
+        if self.future_checkbox.checkState():
+            rqdata.update_future(self.message_box)
+        return
+

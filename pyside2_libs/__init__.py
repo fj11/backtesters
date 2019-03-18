@@ -139,6 +139,7 @@ class BT(QObject):
         self.window.findChild(QAction, "action_roll").triggered.connect(self.onRoll)
         self.window.findChild(QAction, "action_delete_column").triggered.connect(self.onDeleteColumn)
         self.window.findChild(QAction, "action_registration").triggered.connect(self.registration)
+        self.window.findChild(QAction, "actionupdate").triggered.connect(self.update)
 
         self._connectBackTestOptionSignal()
 
@@ -256,7 +257,8 @@ class BT(QObject):
                 menu.addAction(no_support)
         menu.popup(QtGui.QCursor.pos())
 
-
+    def update(self):
+        subWindows.RQData(self, self.window, self.mdi_area)
 
     def onDisplay(self):
 

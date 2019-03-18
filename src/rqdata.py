@@ -5,13 +5,17 @@ import os
 os.chdir("../")
 from src import sql
 import datetime
+
+from PySide2 import QtGui
+
 sql.encryption("123qwe!@#QWE")
 rq.init()
 
-
+START_DATE = datetime.datetime(year=2010, month=1, day=1)
 TODAY = datetime.datetime.today()
 #TODAY = datetime.datetime(year=2018, month=01, day=1)
 TODAY_STR = TODAY.strftime('%Y%m%d')
+START_DATE_STR = START_DATE.strftime("%Y%m%d")
 DELTA = datetime.timedelta(days=1)
 # #print rq.get_price('510050.XSHG','2017-3-23','2018-3-23')
 # Opts = rq.all_instruments(type="Option")
@@ -91,7 +95,7 @@ def update_stock():
     sql.insert(all_instruments, "stock/contract", "replace")
     return
 
-def update_future():
+def update_future(message=None):
     all_instruments = rq.all_instruments(type="Future")
     sql.insert(all_instruments, "future/contract", "replace")
     futures = ["CU", "M", "SR"]
@@ -100,39 +104,47 @@ def update_future():
         data = data[data.symbol.str.contains("主力连续")]
         ids = data.order_book_id
         for id in ids:
-            print(u"正在更新期货合约：%s 日线数据" % id)
+            if message:
+                message.append(u"正在更新期货合约：%s 主力连续日线数据" % id)
+                message.update()
+            else:
+                print(u"正在更新期货合约：%s 主力连续日线数据" % id)
             table = "future/contracts/%s" % id
             if sql.is_table(table):
                 if is_future_contract_need_update(table):
                     start_date_string = get_started_date(table)
                     df = rq.get_price(id, start_date=start_date_string, end_date=TODAY_STR, frequency='1d')
                     if not sql.insert(df, table, "append", index=True, index_label="date"):
-                        df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
+                        df = rq.get_price(id, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
                         sql.insert(df, table, "replace", index=True, index_label="date")
             else:
-                df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
+                df = rq.get_price(id, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
                 sql.insert(df, table, "replace", index=True, index_label="date")
 
     return
 
-def update_option():
+def update_option(message=None):
     #Replace all contract infomation
     all_instruments = rq.all_instruments(type="Option")
     sql.insert(all_instruments, "option/contract", "replace")
     underlying_order_ids = all_instruments["underlying_order_book_id"]
     #Update option underlyings
     for id, group in all_instruments.groupby(["underlying_order_book_id"]):
-        print(u"正在更新期权标的：%s 日线数据" % id)
+        if message:
+            message.append(u"正在更新期权标的：%s 日线数据" % id)
+            message.update()
+        else:
+            print(u"正在更新期权标的：%s 日线数据" % id)
         table = "option/underlyings/%s" % id
         if sql.is_table(table):
             if is_option_underlying_need_update(table):
                 start_date_string = get_started_date(table)
                 df = rq.get_price(id, start_date=start_date_string, end_date=TODAY_STR, frequency='1d')
                 if not sql.insert(df, table, "append", index=True, index_label="date"):
-                    df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
+                    df = rq.get_price(id, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
                     sql.insert(df, table, "replace", index=True, index_label="date")
         else:
-            df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
+            df = rq.get_price(id, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
             sql.insert(df, table, "replace", index=True, index_label="date")
 
         #Update option contracts
@@ -140,18 +152,22 @@ def update_option():
         contracts = options.get_contracts(id)
         option_contract_force_replace = False
         for contract in contracts:
-            print(u"正在更新期权标的：%s 的合约：%s 日线数据" % (id, contract))
+            if message:
+                message.append(u"正在更新期权标的：%s 的合约：%s 日线数据" % (id, contract))
+                message.update()
+            else:
+                print(u"正在更新期权标的：%s 的合约：%s 日线数据" % (id, contract))
             table = "option/contracts/%s" % contract
             if sql.is_table(table) and not option_contract_force_replace:
                 if is_option_contract_need_update(table):
                     start_date_string = get_started_date(table)
                     df = rq.get_price(id, start_date=start_date_string, end_date=TODAY_STR, frequency='1d')
                     if not sql.insert(df, table, "append", index=True, index_label="date"):
-                        df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
+                        df = rq.get_price(id, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
                         sql.insert(df, table, "replace", index=True, index_label="date")
                         option_contract_force_replace = True
             else:
-                df = rq.get_price(id, end_date=TODAY_STR, frequency='1d')
+                df = rq.get_price(id, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
                 sql.insert(df, table, "replace", index=True, index_label="date")
 
 if __name__ == "__main__":
