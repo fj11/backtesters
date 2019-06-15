@@ -394,9 +394,16 @@ class BackTest():
         while end_date > current_date:
             current_date = current_date.addDays(1)
             current_date_str = current_date.toString("yyyy-MM-dd 00:00:00")
-            self.__handleManualOrder(current_date_str)
-
             process_bar.setValue(count)
+            table = "option/underlyings/510050.XSHG"
+            tick = sql.read(table, where="date='%s'" % current_date_str)
+            if tick.empty:
+                # 当前日期不是交易日，跳过
+                count += 1
+                continue
+            # 先处理手动订单
+            self.__handleManualOrder(current_date_str)
+            # 在处理自动订单
             option = self.config["options"]
             if option["enable"] == 1 or option["enable"] == 0:
                 underlyings = option["underlyings"]
@@ -531,14 +538,18 @@ class BackTest():
                 self.tc.optionContractPosition.pop(id)
 
     def _updateOptionContractPosition(self, id, close, date, position):
-        position.fpnl = (close * position.volume) - (position.cum_cost)
+        position.cum_cost = position.cost + position.deposit_cost + position.commission + position.slide_cost
+        position.fpnl = (close * position.volume * 10000) - (position.cum_cost)
         position.price = close
         position.date = date
         position.available_today = position.volume
         position.available = position.volume
-        position.cum_cost = position.cost + position.deposit_cost + position.commission + position.slide_cost
-        self.tc.cash.fpnl += position.fpnl
-        self.tc.cash.nav += (position.price * position.volume)
+        if position.volume == 0:
+            self.tc.cash.fpnl += position.pnl
+            position.fpnl = position.pnl
+        else:
+            self.tc.cash.fpnl += position.fpnl
+            self.tc.cash.nav += (position.price * position.volume * 10000)
 
         positions = self.positions.get(id, {})
         _position = positions.get(position.init_time, {})
@@ -561,8 +572,12 @@ class BackTest():
         position.date = date
         position.available_today = position.volume
         position.available = position.volume
-        self.tc.cash.fpnl += position.fpnl
-        self.tc.cash.nav += (position.price * position.volume)
+        if position.volume == 0:
+            self.tc.cash.fpnl += position.pnl
+            position.fpnl = position.pnl
+        else:
+            self.tc.cash.fpnl += position.fpnl
+            self.tc.cash.nav += (position.price * position.volume)
 
         positions = self.positions.get(id, {})
         _position = positions.get(position.init_time, {})
@@ -1043,6 +1058,8 @@ class BackTest():
                             self.cover_option_contract(tick, option, option_contract_setting)
 
     def buy_option_underlying(self, id, volume, tick):
+        if volume <= 0:
+            return
         order = setting.Order()
         order.sec_id = id
         order.order_type = "stock"
@@ -1054,6 +1071,8 @@ class BackTest():
         self.__save_order(order, self.tc.onOptionUnderlyingOrder(order))
 
     def sell_option_underlying(self, id, volume, tick):
+        if volume <= 0:
+            return
         order = setting.Order()
         order.sec_id = id
         order.order_type = "stock"

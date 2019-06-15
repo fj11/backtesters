@@ -123,11 +123,10 @@ class TradeCenter():
         response.side = order.side
         response.transact_time = order.sending_time
 
-
         if order.side == OrderSide_Bid:
             #买入
-
             if order.position_effect == PositionEffect_Open:
+                # 开仓
                 position = self.optionContractPosition.get(order.sec_id, Position())
                 position.init_time = order.sending_time
                 position.side = order.side
@@ -148,7 +147,6 @@ class TradeCenter():
                 position.amount += position.cost
                 # 期权手续费按照张数收取
                 commission = float(self.option_commission_rate) * abs(position.volume_today)
-                position.commission += commission
                 cum_cost = (abs(order.price * position.volume_today * 10000) + abs(
                     commission)) + position.deposit_cost + slide_cost
                 if self.cash.available >= cum_cost:
@@ -160,6 +158,7 @@ class TradeCenter():
                     response.price = order.price
                     response.volume = order.volume
                     response.amount = position.amount
+                    position.commission += commission
                 else:
                     response.status = OrderStatus_Rejected
                     response.ord_rej_reason = OrderRejectReason_NoEnoughCash
@@ -181,8 +180,10 @@ class TradeCenter():
                 position.volume_today = order.volume
                 position.volume += position.volume_today
                 slide_cost = self.slide_point * abs(order.volume)
+                position.slide_cost += slide_cost
                 self.cash.available += position.deposit
                 self.cash.frozen -= position.deposit
+                # 期权手续费按照张数收取
                 commission = float(self.option_commission_rate) * abs(position.volume_today)
                 cum_cost = (abs(order.price * position.volume_today * 10000) + abs(
                     commission)) + position.deposit_cost + slide_cost
@@ -196,6 +197,7 @@ class TradeCenter():
                     response.price = order.price
                     response.volume = order.volume
                     response.amount = position.amount
+                    position.commission += commission
                 else:
                     response.status = OrderStatus_Rejected
                     response.ord_rej_reason = OrderRejectReason_NoEnoughCash
@@ -218,6 +220,7 @@ class TradeCenter():
                 position.volume_today = order.volume
                 position.volume += position.volume_today
                 slide_cost = self.slide_point * abs(order.volume)
+                position.slide_cost += slide_cost
                 position.amount += abs(order.price * position.volume_today * 10000)
                 # if position.available >= position.volume_today:
                 deposit_coefficient = float(order.deposit_coefficient)
@@ -260,6 +263,7 @@ class TradeCenter():
                 position.volume_today = order.volume
                 position.volume += position.volume_today
                 slide_cost = self.slide_point * abs(order.volume)
+                position.slide_cost += slide_cost
                 position.amount += abs(order.price * position.volume_today * 10000)
                 if position.available >= position.volume_today:
                     commission = float(self.option_commission_rate) * abs(position.volume_today)
