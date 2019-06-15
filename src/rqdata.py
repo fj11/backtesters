@@ -161,13 +161,13 @@ def update_option(message=None):
             if sql.is_table(table) and not option_contract_force_replace:
                 if is_option_contract_need_update(table):
                     start_date_string = get_started_date(table)
-                    df = rq.get_price(id, start_date=start_date_string, end_date=TODAY_STR, frequency='1d')
+                    df = rq.get_price(contract, start_date=start_date_string, end_date=TODAY_STR, frequency='1d')
                     if not sql.insert(df, table, "append", index=True, index_label="date"):
-                        df = rq.get_price(id, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
+                        df = rq.get_price(contract, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
                         sql.insert(df, table, "replace", index=True, index_label="date")
                         option_contract_force_replace = True
             else:
-                df = rq.get_price(id, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
+                df = rq.get_price(contract, start_date=START_DATE_STR, end_date=TODAY_STR, frequency='1d')
                 sql.insert(df, table, "replace", index=True, index_label="date")
 
 if __name__ == "__main__":
