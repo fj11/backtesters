@@ -133,7 +133,7 @@ class BT(QObject):
         self.add_option_contract.triggered.connect(self.onAddOptionContract)
         self.delete_backtest_tree_item.triggered.connect(self.onDeleteBackTestTreeItem)
         self.filter.triggered.connect(self.onFilter)
-        self.mdi_area.subWindowActivated.connect(self.onSubWindoActivated)
+        self.mdi_area.subWindowActivated.connect(self.onSubWindowActivated)
 
         self.window.findChild(QAction, "display_action").triggered.connect(self.onDisplay)
         self.window.findChild(QAction, "action_roll").triggered.connect(self.onRoll)
@@ -214,13 +214,17 @@ class BT(QObject):
         data.insert(column_number + 1, new_column_name, data[column_name].shift(number))
         self.__display_table(data, current_window)
 
-    def onSubWindoActivated(self, subWindow):
+    def onSubWindowActivated(self, subWindow):
         if hasattr(subWindow, "btData") and hasattr(subWindow, "btFilePath"):
             self.action_save_file.setEnabled(True)
             self.action_save_as_flie.setEnabled(True)
         else:
             self.action_save_file.setEnabled(False)
             self.action_save_as_flie.setEnabled(False)
+
+    def onSubWindowClosed(self):
+        self.mdi_area.activatePreviousSubWindow()
+        return
 
     def onBackTestTreeDoubleClicked(self, item, column):
         subWindows.StrategySetting(self, self.window, item, column)
@@ -838,7 +842,9 @@ class BT(QObject):
                           'acc_net_value',
                           'unit_net_value',
                           'date',
-                          'open_interest'
+                          'open_interest',
+                          'iopv',
+                          'num_trades'
                           ]
         if id == "510050.XSHG":
             where = "date > '2015-02-08 00:00:00'"

@@ -147,7 +147,7 @@ class TradeCenter():
                 position.amount += position.cost
                 # 期权手续费按照张数收取
                 commission = float(self.option_commission_rate) * abs(position.volume_today)
-                cum_cost = (abs(order.price * position.volume_today * 10000) + abs(
+                cum_cost = (position.cost + abs(
                     commission)) + position.deposit_cost + slide_cost
                 if self.cash.available >= cum_cost:
                     self.cash.available -= cum_cost
@@ -309,6 +309,11 @@ class TradeCenter():
             dir_list = sorted(dir_list, key=lambda x: os.path.getmtime(os.path.join(ORDER_PATH, x)))
             # print(dir_list)
             return dir_list
+
+    def cal_option_contract_volume(self, available, price):
+        volume = available / ((price * 10000) + self.option_commission_rate + self.slide_point + 1)
+        return int(volume)
+
 
 if __name__ == "__main__":
     order = Order()

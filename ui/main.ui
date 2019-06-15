@@ -35,6 +35,9 @@
         </color>
        </brush>
       </property>
+      <property name="activationOrder">
+       <enum>QMdiArea::StackingOrder</enum>
+      </property>
      </widget>
     </item>
    </layout>
@@ -159,6 +162,9 @@
      <weight>75</weight>
      <bold>true</bold>
     </font>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetMovable</set>
    </property>
    <property name="windowTitle">
     <string>研究</string>

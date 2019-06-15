@@ -632,7 +632,7 @@ class BackTest():
                 options = data
             else:
                 options.append(data, ignore_index=True)
-        options = options.merge(d, on="order_book_id", how="inner")
+        options = options.merge(d, on="order_book_id", how="inner", suffixes=('_',''))
         return options
 
     def select_option_by_info(self, underlying_tick, option_dataframe, **params):
@@ -926,7 +926,7 @@ class BackTest():
                     option_volume = int(option_volume)
                 elif open_type == 1:
                     if option_side == 0:
-                        option_volume = int((float(option_volume)/(option.close*10000)))
+                        option_volume = self.tc.cal_option_contract_volume(float(option_volume), option.close)
                     elif option_side == 1:
                         _option_volume = 0
                         if option_type == 0:
@@ -943,7 +943,7 @@ class BackTest():
                     option_ratio = option_ratio * (float(option_group_setting["ratio"]["value"])/100)
                     option_ratio = option_ratio * (float(option_volume)/100)
                     if option_side == 0:
-                        option_volume = int((option_ratio*self.tc.cash.available/(option.close*10000)))
+                        option_volume = self.tc.cal_option_contract_volume(option_ratio*self.tc.cash.available, option.close)
                     elif option_side == 1:
                         _option_volume = 0
                         option_volume = option_ratio*self.tc.cash.available
@@ -972,7 +972,7 @@ class BackTest():
                     contract_dataframe = sql.read(contract_table, where="order_book_id='%s'" % id)
                     option_tick = sql.read(tick_table, where="date='%s'" % tick.date)
                     option_tick["order_book_id"] = id
-                    option = contract_dataframe.merge(option_tick, on="order_book_id", how="inner")
+                    option = contract_dataframe.merge(option_tick, on="order_book_id", how="inner", suffixes=('_',''))
                     option = option.T.squeeze()
                     if option_side == 0:
                         self.sell_option_contract(tick, option, option_contract_setting, volume)
@@ -1007,7 +1007,8 @@ class BackTest():
                                 option_volume = int(option_volume)
                             elif open_type == 1:
                                 if option_side == 0:
-                                    option_volume = int((float(option_volume) / (option.close * 10000)))
+                                    option_volume = self.tc.cal_option_contract_volume(float(option_volume),
+                                                                                       option.close)
                                 elif option_side == 1:
                                     _option_volume = 0
                                     if option_type == 0:
@@ -1026,8 +1027,8 @@ class BackTest():
                                 option_ratio = option_ratio * (float(option_group_setting["ratio"]["value"]) / 100)
                                 option_ratio = option_ratio * (float(option_volume) / 100)
                                 if option_side == 0:
-                                    option_volume = int(
-                                        (option_ratio * self.tc.cash.available / (option.close * 10000)))
+                                    option_volume = self.tc.cal_option_contract_volume(
+                                        option_ratio * self.tc.cash.available, option.close)
                                 elif option_side == 1:
                                     _option_volume = 0
                                     option_volume = option_ratio * self.tc.cash.available
