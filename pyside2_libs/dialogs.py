@@ -6,7 +6,7 @@ from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QTreeWidgetItem, \
     QListWidget, QComboBox, QDialogButtonBox, QLineEdit, \
     QTabWidget, QTreeWidget, QSpinBox, QLabel, QGroupBox, QPushButton,\
-    QDoubleSpinBox
+    QDoubleSpinBox, QTextEdit
 
 import talib
 from talib import abstract
@@ -78,14 +78,32 @@ class Function():
                     sub_node.setText(0, value)
 
             self.tec_tree.itemClicked.connect(
-                lambda event1, event2: self.onFunctionTecTree(event1, event2, function_ui))
-            # self.search_tec_function.textEdited.connect(self.onFunctionInput)
+                lambda event1, event2: self.onFunctionTecTree(event1, event2, function_ui, data, hidden_columns))
+            self.search_tec_function.textEdited.connect(lambda event: self.onTecFunctionSearched(function_ui))
 
-    def onTecFunctionSearched(self):
-        text = self.search_tec_function.text().strip()
+    def onTecFunctionSearched(self, function_ui):
 
-    def onFunctionTecTree(self, item, column, function_ui):
+        text = self.search_tec_function.text().strip().lower()
+        self.tec_tree.clear()
+        self.tec_tree = function_ui.findChild(QTreeWidget, "tec_tree")
+        if text != "":
+            talib_functions = talib.get_functions()
+            for i in talib_functions:
+                if text in i.lower():
+                    node = QTreeWidgetItem(self.tec_tree)
+                    node.setText(0, i)
+        else:
+            talib_groups = talib.get_function_groups()
+            for key in talib_groups.keys():
+                node = QTreeWidgetItem(self.tec_tree)
+                node.setText(0, key)
+                for value in talib_groups[key]:
+                    sub_node = QTreeWidgetItem(node)
+                    sub_node.setText(0, value)
+
+    def onFunctionTecTree(self, item, column, function_ui, data, hidden_columns):
         group_box = function_ui.findChild(QGroupBox, "parameter_box")
+        display_name_box = function_ui.findChild(QLineEdit, "display_name")
         labels = group_box.findChildren(QLabel)
         spin_boxs = group_box.findChildren(QSpinBox)
         for label in labels:
@@ -97,24 +115,41 @@ class Function():
         if text in talib.get_function_groups().keys():
             return
         indicator = abstract.Function(text.lower())
+        info = indicator.info
+        display_name = info.get("display_name", "")
+        display_name_box.setText(display_name)
+
         params_dict = indicator.get_parameters()
-        keys = params_dict.keys()
+        keys = list(params_dict.keys())
+        keys.insert(0, u"Column")
         locator = 20
         num = 0
         paras_locators = [locator + i * 30 for i in range(len(keys))]
         for key in keys:
             p = paras_locators[num]
-            value = params_dict[key]
             label = QLabel(group_box)
             label.setText(key)
             label.setGeometry(10, p, 100, 20)
-            spin_box = QSpinBox(group_box)
-            spin_box.setGeometry(100, p, 50, 20)
-            spin_box.setObjectName(text)
-            spin_box.setWhatsThis(key)
-            spin_box.setValue(value)
+            if key == "Column":
+                combo_box = QComboBox(group_box)
+                combo_box.setGeometry(100, p, 100, 20)
+                combo_box.setObjectName(key)
+                combo_box.setWhatsThis(key)
+                columns = [i for i in list(data.columns) if i not in hidden_columns]
+                combo_box.addItems(columns)
+                if "close" in columns:
+                    combo_box.setCurrentText("close")
+                combo_box.show()
+            else:
+                spin_box = QSpinBox(group_box)
+                spin_box.setGeometry(100, p, 50, 20)
+                spin_box.setObjectName(text)
+                spin_box.setWhatsThis(key)
+                value = params_dict[key]
+                spin_box.setValue(value)
+                spin_box.show()
             label.show()
-            spin_box.show()
+
             num += 1
 
     def onFunctionInput(self, function_ui):
@@ -217,8 +252,14 @@ class Function():
             output_names = tech_indicator.output_names
             group_box = function_ui.findChild(QGroupBox, "parameter_box")
             spin_boxs = group_box.findChildren(QSpinBox)
+            combo_boxs = group_box.findChildren(QComboBox)
 
-            data_arrays = {"close": data.get("close", []),
+            selected_column_name = "close"
+            for combo_box in combo_boxs:
+                name = combo_box.objectName()
+                if name == "Column":
+                    selected_column_name = combo_box.currentText()
+            data_arrays = {"close": data.get(selected_column_name, []),
                            "open": data.get("open", []),
                            "high": data.get("high", []),
                            "low": data.get("low", []),
