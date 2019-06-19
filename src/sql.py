@@ -34,7 +34,7 @@ def read_latest_row(table):
 
 def insert(data, table, if_exists, index=False, index_label=None):
     try:
-        if not data.empty:
+        if data is not None and not data.empty:
             data.to_sql(table, SQL, if_exists=if_exists, index=index, index_label=index_label)
         return True
     except Exception as err:
@@ -67,7 +67,7 @@ def list_tables():
     return [i[0] for i in tables]
 
 if __name__ == "__main__":
-    # encryption("fengjian")
+    encryption("123qwe!@#QWE")
     # print(help(SQL))
     # print(list_tables())
     # print read("/stock/XSHG/600009/daily/bar", where="tradeDate='1998-02-18'")

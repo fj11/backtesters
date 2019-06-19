@@ -24,6 +24,8 @@ from. import dialogs, subWindows
 
 ROOT = os.path.normpath(os.path.join(os.curdir, ".."))
 
+sql.encryption("123qwe!@#QWE")
+
 def get_disk_id():
     import wmi
     M = wmi.WMI()
@@ -697,38 +699,47 @@ class BT(QObject):
         file_name, extension = os.path.splitext(fileName)
         if extension == ".csv":
             data = pd.read_csv(fileName)
-            self._show_table_sub_window(file_name, data, type="csv", id=file_name)
+            subWindows.GridView(self, fileName, data, id=fileName,
+                                type="csv")
         elif extension == ".xls" or  extension == ".xlsx":
             data = pd.read_excel(fileName)
-            self._show_table_sub_window(file_name, data, type="excel", id=file_name)
+            subWindows.GridView(self, fileName, data, id=fileName,
+                                type="csv")
         elif extension == "bt":
             data = pickle.load(fileName)
 
     def onSave(self, type, data, file_path):
 
-        if type == 1:
+        if type == 0:
             writer = pd.ExcelWriter('%s' % file_path)
             data.to_excel(writer, 'BackTest')
             writer.save()
-        elif type == 0:
+        elif type == 1:
             with open("%s "% file_path, "wb") as f:
                 pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
 
     def onSaveAs(self):
         currentSubWindow = self.mdi_area.currentSubWindow()
-        data = getattr(currentSubWindow, "btData")
-        type = getattr(currentSubWindow, "btType")
+        if hasattr(currentSubWindow, "subWindowType"):
+            type = getattr(currentSubWindow, "subWindowType")
+        else:
+            type = 10
         fileName = getattr(currentSubWindow, "btFilePath")
-        if fileName is None:
+
+        if fileName is None or fileName == "":
             if type == 0:
                 fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../",
-                                                   "BackTest Files (*.bt)")[0]
-                setattr(currentSubWindow, "btFilePath", fileName)
+                                                       "BackTest Files (*.xlsx)")[0]
+                if fileName:
+                    data = getattr(currentSubWindow, "btData")
+                    hidden_columns = getattr(currentSubWindow, "hidden_columns")
+                    data = data.drop(hidden_columns, axis=1, errors="ignore")
+                    self.onSave(type, data, fileName)
             elif type == 1:
                 fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../",
-                                                       "BackTest Files (*.xlsx)")[0]
-                setattr(currentSubWindow, "btFilePath", fileName)
-        self.onSave(type, data, fileName)
+                                                       "BackTest Files (*.bt)")[0]
+            setattr(currentSubWindow, "btFilePath", fileName)
+
         return
 
     def about(self):

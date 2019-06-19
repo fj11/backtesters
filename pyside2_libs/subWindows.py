@@ -1587,6 +1587,7 @@ class GridView():
             data.index = list(data[index_column])
             data.index.name = index_column
         subWindow = QMdiSubWindow()
+        setattr(subWindow, "subWindowType", 0)
         setattr(subWindow, "btData", data)
         setattr(subWindow, "btId", id)
         setattr(subWindow, "btType", type)
@@ -1614,6 +1615,7 @@ class GridView():
         cornerButton.customContextMenuRequested.connect(self.onCornerButtonRightClicked)
 
         tableView.setWindowTitle(title)
+        tableView.setWindowIcon(QtGui.QIcon("../icon/sheet.png"))
 
         proxyModel = QtCore.QSortFilterProxyModel(subWindow)
         mode = pandas_mode.PandasModel(data)

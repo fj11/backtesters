@@ -13,7 +13,7 @@ rq.init()
 
 START_DATE = datetime.datetime(year=2010, month=1, day=1)
 TODAY = datetime.datetime.today()
-#TODAY = datetime.datetime(year=2018, month=01, day=1)
+TODAY = datetime.datetime(year=2018, month=12, day=31)
 TODAY_STR = TODAY.strftime('%Y%m%d')
 START_DATE_STR = START_DATE.strftime("%Y%m%d")
 DELTA = datetime.timedelta(days=1)
