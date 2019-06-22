@@ -1559,7 +1559,7 @@ class StrategySetting():
 
 class GridView():
 
-    def __init__(self, parent, title, data, id=0, hidden_columns=None, index_column=None, childSubWindow={}, type=1):
+    def __init__(self, parent, title, data, id=0, hidden_columns=[], index_column=None, childSubWindow={}, type=1):
         """
 
                 :param title: Window title
