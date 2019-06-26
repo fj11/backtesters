@@ -29,12 +29,6 @@ class BackTest():
 
         self.tc = None
 
-        subWindow = QMdiSubWindow()
-        setattr(subWindow, "btType", 0)
-        setattr(subWindow, "btId", 0)
-        setattr(subWindow, "btData", None)
-        setattr(subWindow, "btFilePath", None)
-
         backtest = widget
 
         result_tree = backtest.findChild(QTreeWidget)

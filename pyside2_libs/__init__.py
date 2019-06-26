@@ -775,7 +775,7 @@ class BT(QObject):
     def onBacktest(self):
 
         from pyside2_libs.windows import trading_center
-        trading_center.TradeCenterWidget(self, self.window, self.mdi_area)
+        trading_center.TradeCenterWidget(self, self.window)
         #subWindows.BackTest(self, self.window)
 
     def getSubWindowByAttribute(self, key, value):

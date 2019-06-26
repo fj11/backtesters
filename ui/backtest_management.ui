@@ -21,7 +21,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -286,7 +286,7 @@
       </attribute>
       <layout class="QHBoxLayout" name="horizontalLayout_25">
        <item>
-        <widget class="QTreeWidget" name="treeWidget_2">
+        <widget class="QTreeWidget" name="backtest_tree">
          <property name="headerHidden">
           <bool>true</bool>
          </property>
@@ -306,10 +306,16 @@
            <property name="text">
             <string>期权</string>
            </property>
+           <property name="whatsThis">
+            <string>option</string>
+           </property>
           </item>
           <item>
            <property name="text">
             <string>期货</string>
+           </property>
+           <property name="whatsThis">
+            <string>future</string>
            </property>
           </item>
          </item>
@@ -320,7 +326,7 @@
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
-         <widget class="QGroupBox" name="groupBox_3">
+         <widget class="QGroupBox" name="backtest_box">
           <property name="title">
            <string>设置</string>
           </property>
@@ -672,6 +678,31 @@
   <action name="delete_order">
    <property name="text">
     <string>删除订单</string>
+   </property>
+  </action>
+  <action name="action_delete">
+   <property name="text">
+    <string>删除</string>
+   </property>
+  </action>
+  <action name="action_add_option_underlying">
+   <property name="text">
+    <string>添加期权标的</string>
+   </property>
+  </action>
+  <action name="action_add_option_group">
+   <property name="text">
+    <string>添加期权组合</string>
+   </property>
+  </action>
+  <action name="action_add_option_contract">
+   <property name="text">
+    <string>添加期权合约</string>
+   </property>
+  </action>
+  <action name="action_no_support">
+   <property name="text">
+    <string>暂时不支持</string>
    </property>
   </action>
  </widget>
