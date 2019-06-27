@@ -6,24 +6,21 @@ import pandas as pd
 import numpy as np
 
 from PySide2.QtUiTools import QUiLoader
-from PySide2 import QtCore, QtWidgets
+from PySide2 import QtCore
 from PySide2.QtWidgets import QTreeWidgetItem, \
-    QMdiSubWindow, QTableView, \
-    QTableWidget, QAction, QComboBox, QLineEdit, \
+    QMdiSubWindow, QComboBox, QLineEdit, \
     QTreeWidget, QSpinBox, QPushButton,\
-    QMenu, QDoubleSpinBox, QTableWidgetItem, QDateEdit, QProgressBar, \
-    QCalendarWidget, QWidget, QAbstractButton, QAbstractItemView, QCheckBox, QTextEdit
+    QDoubleSpinBox, QDateEdit, QProgressBar
 from PySide2.QtCore import Qt
-from PySide2 import QtGui
 
 from pyside2_libs.windows.grid_view import GridView
 from src import sql, tradeCenter, setting
 
 class BackTest():
-    def __init__(self, widget, main_widget):
+    def __init__(self, widget, main_widget, config):
         self.parent = main_widget
 
-        self.config = main_widget.config
+        self.config = config
         self.mdi_area = self.parent.mdi_area
         self.root = self.parent.root
 
@@ -65,7 +62,7 @@ class BackTest():
             id = item.parent().text(column)
             data = self.orders[id][text][0]
             loader = QUiLoader()
-            order_status = loader.load('order_status.ui', parentWidget=self.parent_widget)
+            order_status = loader.load('order_status.ui', parentWidget=self.parent.window)
             order_status.setWindowTitle("订单状态")
             sec_id = order_status.findChild(QLineEdit, "sec_id")
             sec_id.setText(data[0].sec_id)
@@ -125,7 +122,6 @@ class BackTest():
         pass
 
     def onBacktestRun(self):
-
         self.beforeRun()
         start_date = self.backtest.findChild(QDateEdit, "start_date").date()
         end_date = self.backtest.findChild(QDateEdit, "end_date").date()
@@ -199,11 +195,11 @@ class BackTest():
             data = pickle.load(f)
             self.config["account"] = data
             self.tc = tradeCenter.TradeCenter(data)
-        result_tree = self.backtest.findChild(QTreeWidget)
+        result_tree = self.backtest.findChild(QTreeWidget, "result_tree")
         result_tree.clear()
 
     def afterRun(self):
-        result_tree = self.backtest.findChild(QTreeWidget)
+        result_tree = self.backtest.findChild(QTreeWidget, "result_tree")
 
         for text in ["资产", "仓位", "订单"]:
             item = QTreeWidgetItem(result_tree)
@@ -499,22 +495,22 @@ class BackTest():
             return option_dataframe
 
     def __handleManualOrder(self, date):
-        if not hasattr(self.parent, "manual_order_tree"):
+
+        orders = self.config.get("manual_order", [])
+        if orders == []:
             return
         open_type = self.config["open_type"]["value"]
-        order_tree = self.parent.manual_order_tree
-        count = order_tree. topLevelItemCount()
-        for index in range(count):
-            item = order_tree.topLevelItem(index)
-            send_date_text = item.text(0)
+        for index in range(len(orders)):
+            order = orders[index]
+            send_date_text = order.get("send_date")
             if send_date_text != date:
                 continue
-            underlying_id_text = item.text(1)
-            contract_id_text = item.text(2)
-            position_effect_text = item.text(3)
-            side_text = item.text(4)
-            order_type_text = item.text(5)
-            volume = int(item.text(6))
+            underlying_id_text = order.get("underlying_id")
+            contract_id_text = order.get("contract_id", "")
+            position_effect_text = order.get("position_effect")
+            side_text = order.get("side")
+            order_type_text = order.get("order_type")
+            volume = order.get("volume")
 
             if order_type_text == "期权标的":
                 table = "option/underlyings/%s" % underlying_id_text

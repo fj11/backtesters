@@ -1,9 +1,8 @@
 # encoding: utf-8
 
-from PySide2.QtWidgets import QTreeWidgetItem, \
-    QMdiSubWindow, QTableView, \
-    QTableWidget, QAction, QComboBox, QLineEdit, \
-    QTreeWidget, QSpinBox, QPushButton,\
+from PySide2.QtWidgets import QTreeWidgetItem,\
+    QAction, QComboBox, QLineEdit, \
+    QTreeWidget, QSpinBox,\
     QMenu, QDoubleSpinBox, QGroupBox, QVBoxLayout, QInputDialog
 from PySide2.QtCore import Qt
 from PySide2 import QtGui
@@ -12,10 +11,10 @@ from PySide2.QtUiTools import QUiLoader
 from src import setting
 
 class SemiAutoSignal():
-    def __init__(self, widget, main_widget):
+    def __init__(self, widget, main_widget, config):
         self.parent = main_widget
 
-        self.config = main_widget.config
+        self.config = config
         self.mdi_area = self.parent.mdi_area
         self.root = self.parent.root
         self.group_box_widgets = []
@@ -42,6 +41,47 @@ class SemiAutoSignal():
         self.backtest_tree.customContextMenuRequested.connect(lambda event: self.onBackTestTreeRightClicked())
 
         self.delete_backtest_tree_item.triggered.connect(self.onDeleteBackTestTreeItem)
+
+        self.loadBacktestTree()
+
+    def loadBacktestTree(self):
+        options = self.config.get("options", {})
+        underlyings = options.get("underlyings", [])
+
+        for i in range(1):
+            item = self.backtest_tree.topLevelItem(i)
+            item.setExpanded(True)
+            for j in range(item.childCount()):
+                child_item = item.child(j)
+                child_item.setExpanded(True)
+                whatsthis = child_item.whatsThis(0)
+                if whatsthis == "option":
+                    for underlying in underlyings:
+                        current_item = child_item
+                        node = QTreeWidgetItem(current_item)
+                        node.setText(0, underlying["name"])
+                        node.setCheckState(0, Qt.Unchecked)
+                        node.setWhatsThis(0, "option_underlying")
+                        node.setExpanded(True)
+                        current_item = node
+
+                        groups = underlying.get("groups", [])
+                        for group in groups:
+                            node = QTreeWidgetItem(current_item)
+                            node.setText(0, group["name"])
+                            node.setCheckState(0, Qt.Unchecked)
+                            node.setIcon(0, QtGui.QIcon("../icon/group.png"))
+                            node.setWhatsThis(0, "option_group")
+                            node.setExpanded(True)
+                            current_item = node
+                            contracts = group.get("contracts")
+                            for contract in contracts:
+                                node = QTreeWidgetItem(current_item)
+                                node.setText(0, contract["name"])
+                                node.setCheckState(0, Qt.Unchecked)
+                                node.setWhatsThis(0, "option_contract")
+                                node.setExpanded(True)
+                                current_item = node
 
     def onBackTestTreeDoubleClicked(self, item, column):
         self.setting_show(item, column)

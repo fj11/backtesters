@@ -68,6 +68,8 @@ ACCOUNT = {
 }
 
 SETTINGS = {
+        "manual_order":[],
+
         "open_type":{
             "value":0,
             "type":list,

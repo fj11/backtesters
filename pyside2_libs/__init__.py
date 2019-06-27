@@ -15,12 +15,12 @@ from PySide2.QtWidgets import QMdiArea, QTreeWidgetItem, \
     QMessageBox, QTableView, QToolBox,\
     QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
     QTreeWidget, QSpinBox, QPushButton, QFileDialog,\
-    QMenu, QInputDialog, QSlider
+    QSlider
 from PySide2.QtCore import QObject, Qt
-from PySide2 import QtGui
 
 from src import sql, pandas_mode, setting
-from. import dialogs, subWindows
+from. import dialogs
+from pyside2_libs.windows import trading_center, grid_view
 
 ROOT = os.path.normpath(os.path.join(os.curdir, ".."))
 
@@ -73,10 +73,9 @@ class BT(QObject):
         self.show_contract = self.window.findChild(QToolBox, "show_contract")
         self.option_list = self.window.findChild(QTableView, "option_table_view")
         self.future_list = self.window.findChild(QTableView, "future_table_view")
-        self.backtest_tree = self.window.findChild(QTreeWidget, "backtest_tree")
+
         self.action_function = self.window.findChild(QAction, "actionfunction")
         self.action_signal = self.window.findChild(QAction, "action_signal")
-        self.action_msignal = self.window.findChild(QAction, "action_manul_signal")
         self.action_about = self.window.findChild(QAction, "actionabout")
         self.action_account = self.window.findChild(QAction, "actionacounts")
         self.action_backtest = self.window.findChild(QAction, "actionstart_backtest")
@@ -84,14 +83,9 @@ class BT(QObject):
         self.action_save_file = self.window.findChild(QAction, "actionsave")
         self.action_save_as_flie = self.window.findChild(QAction, "actionsave_as")
         self.action_new_file = self.window.findChild(QAction, "actionnew")
-        self.add_option_underlying = self.window.findChild(QAction, "action_add_option_underlying")
-        self.add_option_group = self.window.findChild(QAction, "action_add_option_group")
-        self.add_option_contract = self.window.findChild(QAction, "action_add_option_contract")
-        self.delete_backtest_tree_item = self.window.findChild(QAction, "action_delete")
+
         self.filter = self.window.findChild(QAction, "action_filter")
 
-        self.backtest_tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.backtest_tree.topLevelItem(0).setExpanded(True)
 
     def loadShowToolBox(self):
         for i in range(self.show_contract.count()):
@@ -121,7 +115,6 @@ class BT(QObject):
         self.future_list.itemDoubleClicked.connect(self.onFutureListDoubleClicked)
         self.action_function.triggered.connect(self.onActionFunction)
         self.action_signal.triggered.connect(self.onActionSignal)
-        self.action_msignal.triggered.connect(self.onActionMSignal)
         self.action_about.triggered.connect(self.about)
         self.action_account.triggered.connect(self.onAccounts)
         self.action_backtest.triggered.connect(self.onBacktest)
@@ -129,11 +122,7 @@ class BT(QObject):
         self.action_open_file.triggered.connect(self.onOpenFile)
         self.action_save_file.triggered.connect(self.onSaveAs)
         self.action_save_as_flie.triggered.connect(self.onSaveAs)
-        self.backtest_tree.itemDoubleClicked.connect(self.onBackTestTreeDoubleClicked)
-        self.add_option_underlying.triggered.connect(self.onAddOptionUnderlying)
-        self.add_option_group.triggered.connect(self.onAddOptionGroup)
-        self.add_option_contract.triggered.connect(self.onAddOptionContract)
-        self.delete_backtest_tree_item.triggered.connect(self.onDeleteBackTestTreeItem)
+
         self.filter.triggered.connect(self.onFilter)
         self.mdi_area.subWindowActivated.connect(self.onSubWindowActivated)
 
@@ -142,12 +131,6 @@ class BT(QObject):
         self.window.findChild(QAction, "action_delete_column").triggered.connect(self.onDeleteColumn)
         self.window.findChild(QAction, "action_registration").triggered.connect(self.registration)
         self.window.findChild(QAction, "actionupdate").triggered.connect(self.update)
-
-        self._connectBackTestOptionSignal()
-
-    def _connectBackTestOptionSignal(self):
-
-        self.backtest_tree.customContextMenuRequested.connect(self.onBackTestTreeRightClicked)
 
     def onDeleteColumn(self):
         current_window = self.mdi_area.currentSubWindow()
@@ -228,43 +211,10 @@ class BT(QObject):
         self.mdi_area.activatePreviousSubWindow()
         return
 
-    def onBackTestTreeDoubleClicked(self, item, column):
-        subWindows.StrategySetting(self, self.window, item, column)
-
-    def active_backtest_widget(self, bt_type, text):
-        return self._active_backtest_widget(bt_type, text)
-
-    def _active_backtest_widget(self, bt_type, text):
-        for i in self.mdi_area.subWindowList():
-            if hasattr(i, "btType") and i.btType==bt_type and i.windowTitle() == text:
-                self.mdi_area.setActiveSubWindow(i)
-                return True
-
-
-
-    def onBackTestTreeRightClicked(self):
-        menu = QMenu(self.backtest_tree)
-        if self.backtest_tree.currentItem().whatsThis(0) == "option":
-            #
-            menu.addAction(self.add_option_underlying)
-        else:
-            whats_this = self.backtest_tree.currentItem().whatsThis(0)
-            if whats_this == "option_underlying":
-                menu.addAction(self.add_option_group)
-                # menu.addAction(self.add_option_contract)
-                menu.addAction(self.delete_backtest_tree_item)
-            elif whats_this == "option_group":
-                menu.addAction(self.add_option_contract)
-                menu.addAction(self.delete_backtest_tree_item)
-            elif whats_this == "option_contract":
-                menu.addAction(self.delete_backtest_tree_item)
-            else:
-                no_support = self.window.findChild(QAction, "action_no_support")
-                menu.addAction(no_support)
-        menu.popup(QtGui.QCursor.pos())
-
     def update(self):
-        subWindows.RQData(self, self.window, self.mdi_area)
+        #TODO
+        return
+        # subWindows.RQData(self, self.window, self.mdi_area)
 
     def onDisplay(self):
 
@@ -299,10 +249,8 @@ class BT(QObject):
     def onGridDisplayAccept(self, show_list, hide_list, sub_window):
 
         items_text = [hide_list.item(i).text() for i in range(hide_list.count())]
-
         setattr(sub_window, "hidden_columns", items_text)
         data = getattr(sub_window, "btData")
-
         self.__display_table(data, sub_window)
 
         return
@@ -470,227 +418,6 @@ class BT(QObject):
         self.__display_table(data, table)
         return
 
-    def onDeleteBackTestTreeItem(self):
-        current_item = self.backtest_tree.currentItem()
-        parent_item = current_item.parent()
-        grand_parent_item = parent_item.parent()
-        whats_this = current_item.whatsThis(0)
-        parent_whats_this = parent_item.whatsThis(0)
-        parent_item_text = parent_item.text(0)
-        current_item_text = current_item.text(0)
-
-        index = parent_item.indexOfChild(current_item)
-        if whats_this == "option_group":
-            for underlying in self.config["options"]["underlyings"]:
-                if underlying.get("name") == parent_item_text:
-                    groups = underlying.get("groups")
-                    for group in groups:
-                        if group.get("name") == current_item_text:
-                            groups.remove(group)
-        elif whats_this == "option_contract":
-            #两种情况需要处理
-            if parent_whats_this == "option_underlying":
-                for underlying in self.config["options"]["underlyings"]:
-                    if underlying.get("name") == parent_item_text:
-                        contracts = underlying.get("contracts")
-                        for contract in contracts:
-                            if contract.get("name") == current_item_text:
-                                contracts.remove(contract)
-            elif parent_whats_this == "option_group":
-                for underlying in self.config["options"]["underlyings"]:
-                    if underlying.get("name") == grand_parent_item.text(0):
-                        groups = underlying.get("groups")
-                        for group in groups:
-                            if group.get("name") == parent_item_text:
-                                contracts = group.get("contracts")
-                                for contract in contracts:
-                                    if contract.get("name") == current_item_text:
-                                        contracts.remove(contract)
-        elif whats_this == "option_underlying":
-            underlyings = self.config["options"]["underlyings"]
-            for underlying in underlyings:
-                if underlying.get("name") == current_item_text:
-                    underlyings.remove(underlying)
-        parent_item.takeChild(index)
-        return
-
-    def onAddOptionGroup(self):
-        text, ok = QInputDialog.getText(self.window, "请输入期权组名称", "名称", QLineEdit.Normal)
-        current_item = self.backtest_tree.currentItem()
-        # parent_item = current_item.parent()
-        current_item_text = current_item.text(0)
-        # parent_item_text = parent_item.text(0)
-        if ok and text:
-            node = QTreeWidgetItem(current_item)
-            node.setText(0, text)
-            node.setCheckState(0, Qt.Unchecked)
-            node.setWhatsThis(0, "option_group")
-            node.setIcon(0, QtGui.QIcon("../icon/group.png"))
-            self.backtest_tree.expandItem(self.backtest_tree.currentItem())
-            group_dict = {
-                "name": text,
-                "enable": 1,
-                "contracts": [],
-                "signal": {
-                    "type": "list",
-                    "value": 0,
-                    "list": []
-                },
-                "ratio": {
-                    "type": "float",
-                    "value": 0,
-                },
-            }
-            for underlying in self.config["options"]["underlyings"]:
-                if underlying.get("name") == current_item_text:
-                    underlying["groups"].append(group_dict)
-
-    def onAddOptionContract(self):
-        text, ok = QInputDialog.getText(self.window, "请输入期权合约名称", "名称", QLineEdit.Normal)
-        current_item = self.backtest_tree.currentItem()
-        current_item_whats_this = current_item.whatsThis(0)
-        current_item_text = current_item.text(0)
-        parent_item = current_item.parent()
-        parent_whats_this = parent_item.whatsThis(0)
-        parent_item_text = parent_item.text(0)
-        if ok and text:
-            node = QTreeWidgetItem(current_item)
-            node.setText(0, text)
-            node.setCheckState(0, Qt.Unchecked)
-            node.setWhatsThis(0, "option_contract")
-            node.setIcon(0, QtGui.QIcon("../icon/contract.png"))
-            self.backtest_tree.expandItem(self.backtest_tree.currentItem())
-            filter_dict = {
-                "name": text,
-                "enable": 1,
-                "open_status": False,
-                "ids":[],
-                "option_type": {
-                    "type": "list",
-                    "value": 0,
-                    "list": setting.OPTION_TYPE,
-                },
-                "option_side": {
-                    "type": "list",
-                    "value": 0,
-                    "list": setting.OPTION_SIDE,
-                },
-                "close_method": {
-                    "type": "list",
-                    "value": 0,
-                    "list": setting.OPTION_CLOSE_METHOD,
-                },
-                "change_feq": {
-                    "type": "list",
-                    "value": 0,
-                    "list": setting.OPTION_CHANGE_FEQ,
-                },
-                "change_condition": {
-                    "type": "list",
-                    "value": 0,
-                    "list": setting.OPTION_CHANGE_CONDITION,
-                },
-                "month_interval": {
-                    "type": "list",
-                    "value": 0,
-                    "list": [setting.OPTION_INTERVAL[i] for i in range(len(setting.OPTION_INTERVAL)) if i != 2],
-                },
-                "strike_interval": {
-                    "type": "list",
-                    "value": 0,
-                    "list": setting.OPTION_STRIKE_INTERVAL,
-                },
-                "smart_selection": {
-                    "type": "list",
-                    "value": 1,
-                    "list": setting.OPTION_SMART_SELECTION,
-                },
-                "type": "option",
-                "volume": {
-                    "type": "int",
-                    "value": 0
-                },
-                "deposit_coefficient": {
-                    "type": "int",
-                    "value": 1,
-                },
-                "delta": {
-                    "type": "int",
-                    "value": 0,
-                },
-                "gamma": {
-                    "type": "int",
-                    "value": 0,
-                },
-                "theta": {
-                    "type": "int",
-                    "value": 0,
-                },
-                "vega": {
-                    "type": "int",
-                    "value": 0,
-                },
-                "rho": {
-                    "type": "int",
-                    "value": 0,
-                },
-                "ivix": {
-                    "type": "float",
-                    "value": 0
-                }
-            }
-            for underlying in self.config["options"]["underlyings"]:
-                underlying_name = underlying.get("name")
-                if current_item_whats_this == "option_group":
-                    if underlying_name == parent_item_text:
-                        groups = underlying.get("groups")
-                        for group in groups:
-                            if group.get("name") ==  current_item_text:
-                                group["contracts"].append(filter_dict)
-                elif current_item_whats_this == "option_underlying":
-                    if underlying_name == current_item_text:
-                        underlying.get("contracts").append(filter_dict)
-
-    def onAddOptionUnderlying(self):
-
-        text, ok = QInputDialog.getText(self.window, "请输入期权标的名称","名称", QLineEdit.Normal)
-        if ok and text:
-            node = QTreeWidgetItem(self.backtest_tree.currentItem())
-            node.setText(0, text)
-            node.setCheckState(0, Qt.Unchecked)
-            node.setWhatsThis(0, "option_underlying")
-            self.backtest_tree.expandItem(self.backtest_tree.currentItem())
-            group_dict = {
-                "name": text,
-                "enable": 0,
-                "ratio": {
-                    "type": "int",
-                    "value": 0,
-                },
-                "id": {
-                    "type": "list",
-                    "value": 0,
-                    "list": [i.btId for i in self.mdi_area.subWindowList() if hasattr(i, "btType") and i.btType in ["option_underlying", "excel", "csv"]]
-                },
-                "signal": {
-                    "type": "list",
-                    "value": 0,
-                    "list": []
-                },
-                "option_side": {
-                    "type": "list",
-                    "value": 0,
-                    "list": [u"买入"]
-                },
-                "volume": {
-                    "type": "int",
-                    "value": 0,
-                },
-                "groups": [],
-                "contracts":[],
-            }
-            self.config["options"]["underlyings"].append(group_dict)
-
     def onNewFile(self):
         return
 
@@ -699,14 +426,16 @@ class BT(QObject):
         file_name, extension = os.path.splitext(fileName)
         if extension == ".csv":
             data = pd.read_csv(fileName)
-            subWindows.GridView(self, fileName, data, id=fileName,
+            grid_view.GridView(self, file_name, data, id=file_name,
                                 type="csv")
         elif extension == ".xls" or  extension == ".xlsx":
             data = pd.read_excel(fileName)
-            subWindows.GridView(self, fileName, data, id=fileName,
+            grid_view.GridView(self, file_name, data, id=file_name,
                                 type="csv")
-        elif extension == "bt":
-            data = pickle.load(fileName)
+        elif extension == ".bt":
+            pkl_file = open(fileName, 'rb')
+            data = pickle.load(pkl_file)
+            trading_center.TradeCenterWidget(self, self.window, data)
 
     def onSave(self, type, data, file_path):
 
@@ -720,6 +449,8 @@ class BT(QObject):
 
     def onSaveAs(self):
         currentSubWindow = self.mdi_area.currentSubWindow()
+        if currentSubWindow is None:
+            return
         if hasattr(currentSubWindow, "subWindowType"):
             type = getattr(currentSubWindow, "subWindowType")
         else:
@@ -738,6 +469,9 @@ class BT(QObject):
             elif type == 1:
                 fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../",
                                                        "BackTest Files (*.bt)")[0]
+                if fileName:
+                    data = getattr(currentSubWindow, "btData")
+                    self.onSave(type, data, fileName)
             setattr(currentSubWindow, "btFilePath", fileName)
 
         return
@@ -774,9 +508,7 @@ class BT(QObject):
 
     def onBacktest(self):
 
-        from pyside2_libs.windows import trading_center
         trading_center.TradeCenterWidget(self, self.window)
-        #subWindows.BackTest(self, self.window)
 
     def getSubWindowByAttribute(self, key, value):
         return self.__getSubWindowByAttribute(key, value)
@@ -796,9 +528,6 @@ class BT(QObject):
             self.messageBox("请先打开数据")
             return
         dialogs.Signal(self, self.window, current_window)
-
-    def onActionMSignal(self):
-        subWindows.ManualSignal(self, self.window, self.mdi_area)
 
     def onActionFunction(self):
 
@@ -871,7 +600,7 @@ class BT(QObject):
             self.messageBox("数据库中没有该数据")
             return
         else:
-            subWindows.GridView(self, name, data, id=id,
+            grid_view.GridView(self, name, data, id=id,
                                     hidden_columns=hidden_columns,
                                     index_column='date',
                                     childSubWindow=childSubWindow,
@@ -901,7 +630,7 @@ class BT(QObject):
             self.messageBox("数据库中没有该数据")
             return
         else:
-            subWindows.GridView(self, name, data, id=id,
+            grid_view.GridView(self, name, data, id=id,
                                     hidden_columns=hidden_columns,
                                     childSubWindow={
                                         "title": id,
@@ -946,7 +675,7 @@ class BT(QObject):
             self.messageBox("数据库中没有该数据")
             return
         else:
-            subWindows.GridView(self, name, data, id=id,
+            grid_view.GridView(self, name, data, id=id,
                                     hidden_columns=hidden_columns,
                                     childSubWindow={
                                         "title":id,
@@ -980,7 +709,7 @@ class BT(QObject):
             self.messageBox("数据库中没有该数据")
             return
         else:
-            subWindows.GridView(self, "标的%s在%s日的期权全部合约" % (underlying_symbol, date), showData, index_column="symbol", hidden_columns=["symbol"], id=1)
+            grid_view.GridView(self, "标的%s在%s日的期权全部合约" % (underlying_symbol, date), showData, index_column="symbol", hidden_columns=["symbol"], id=1)
 
     def _get_future_contract_data(self, name, id):
         table = "future/contracts/%s" % id
@@ -1010,7 +739,7 @@ class BT(QObject):
             self.messageBox("数据库中没有该数据")
             return
         else:
-            subWindows.GridView(self, name, data, id=id,
+            grid_view.GridView(self, name, data, id=id,
                                     hidden_columns=hidden_columns,
                                     index_column='date',
                                     childSubWindow=childSubWindow,

@@ -13,7 +13,9 @@ from src import sql
 
 class ManualSignal():
 
-    def __init__(self, widget, main_widget):
+    def __init__(self, widget, main_widget, config):
+        self.config = config
+
         self.main_widget = main_widget
         manual_create_order = widget
         manual_create_order.setWindowTitle("手动下单")
@@ -27,32 +29,57 @@ class ManualSignal():
         order_tree = manual_create_order.findChild(QTreeWidget, "mtree")
         order_tree.setContextMenuPolicy(Qt.CustomContextMenu)
 
-        self.manual_create_order.findChild(QAction, "delete_order").triggered.connect(self.onDeleteOrder)
-        order_tree.itemClicked.connect(self.onOrderTreeClicked)
-        order_tree.customContextMenuRequested.connect(self.onOrderTreeRightClicked)
-        order_type.currentTextChanged.connect(self.onOrderTypeChanged)
-        underlying_id.currentTextChanged.connect(self.onUnderlyingIdChanged)
-        contract_id.currentTextChanged.connect(self.onContractIdChanged)
+        self.manual_create_order.findChild(QAction, "delete_order").triggered.connect(lambda event:self.onDeleteOrder())
+        order_tree.itemClicked.connect(lambda event:self.onOrderTreeClicked(event))
+        order_tree.customContextMenuRequested.connect(lambda event:self.onOrderTreeRightClicked())
+        order_type.currentTextChanged.connect(lambda event:self.onOrderTypeChanged(event))
+        underlying_id.currentTextChanged.connect(lambda event:self.onUnderlyingIdChanged(event))
+
+        contract_id.currentTextChanged.connect(lambda event: self.onContractIdChanged(event))
+
         calendar.clicked.connect(lambda event: self.onCalendarClicked(event, manual_create_order))
-        add_order.clicked.connect(self.onAddOrderClicked)
+        add_order.clicked.connect(lambda :self.onAddOrderClicked())
 
         order_type.setCurrentIndex(1)
+        orders = self.config.get("manual_order")
+        if orders:
+            self.loadOrderTree(orders)
+
+    def loadOrderTree(self, orders):
+        for order in orders:
+            order_type = order.get("order_type")
+            send_date = order.get("send_date")
+            underlying_id = order.get("underlying_id")
+            contract_id = order.get("contract_id")
+            position_effect = order.get("position_effect")
+            side = order.get("side")
+            volume = order.get("volume")
+            order_tree = self.manual_create_order.findChild(QTreeWidget, "mtree")
+            item = QTreeWidgetItem(order_tree)
+            item.setText(0, send_date)
+            item.setText(1, underlying_id)
+            item.setText(2, contract_id)
+            item.setText(3, position_effect)
+            item.setText(4, side)
+            item.setText(5, order_type)
+            item.setText(6, str(volume))
 
     def onDeleteOrder(self):
-        order_tree = self.manual_create_order.findChild(QTreeWidget)
+        order_tree = self.manual_create_order.findChild(QTreeWidget, "mtree")
         item = order_tree.currentItem()
         index = order_tree.indexOfTopLevelItem(item)
         order_tree.takeTopLevelItem(index)
+        self.config["manual_order"].pop(index)
 
     def onOrderTreeRightClicked(self):
-        order_tree = self.manual_create_order.findChild(QTreeWidget)
+        order_tree = self.manual_create_order.findChild(QTreeWidget, "mtree")
         delete_order = self.manual_create_order.findChild(QAction, "delete_order")
-        if order_tree.currentColumn() > 0:
+        if order_tree.currentColumn() >= 0:
             menu = QMenu(order_tree)
             menu.addAction(delete_order)
             menu.popup(QtGui.QCursor.pos())
 
-    def onOrderTreeClicked(self, item, column):
+    def onOrderTreeClicked(self, item):
 
         send_date_text = item.text(0)
 
@@ -84,22 +111,44 @@ class ManualSignal():
         side = self.manual_create_order.findChild(QComboBox, "side")
         volume = self.manual_create_order.findChild(QSpinBox, "mvolume")
 
-        order_tree = self.manual_create_order.findChild(QTreeWidget)
+        order_tree = self.manual_create_order.findChild(QTreeWidget, "mtree")
 
         item = QTreeWidgetItem(order_tree)
-        item.setText(0, send_date.dateTime().toString("yyyy-MM-dd 00:00:00"))
-        item.setText(1, underlying_id.currentText())
-        if order_type.currentIndex() == 0:
+
+        send_date_text = send_date.dateTime().toString("yyyy-MM-dd 00:00:00")
+        underlying_id_text = underlying_id.currentText()
+        order_type_text = order_type.currentText()
+        side_text = side.currentText()
+        volume_text = volume.value()
+        position_effect_text = position_effect.currentText()
+
+        order = {
+            "order_type": order_type_text,
+            "send_date": send_date_text,
+            "underlying_id": underlying_id_text,
+            "position_effect": position_effect_text,
+            "side": side_text,
+            "volume": volume_text
+        }
+
+        item.setText(0, send_date_text)
+        item.setText(1, underlying_id_text)
+        if order_type_text == "期权合约":
             if hasattr(contract_id, "ids"):
                 ids = getattr(contract_id, "ids")
                 contract_symbol_index = contract_id.currentIndex()
-                item.setText(2, ids[contract_symbol_index])
-        item.setText(3, position_effect.currentText())
-        item.setText(4, side.currentText())
-        item.setText(5, order_type.currentText())
-        item.setText(6, str(volume.value()))
+                contract_symbol_text = ids[contract_symbol_index]
+                item.setText(2, contract_symbol_text)
+                order.update(
+                    {"contract_id": contract_symbol_text    }
+                )
 
-        self.main_widget.manual_order_tree = order_tree
+        item.setText(3, position_effect_text)
+        item.setText(4, side_text)
+        item.setText(5, order_type_text)
+        item.setText(6, str(volume_text))
+
+        self.config["manual_order"].append(order)
 
     def onOrderTypeChanged(self, text):
         underlying_id = self.manual_create_order.findChild(QComboBox, "underlying_id")
