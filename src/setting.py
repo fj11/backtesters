@@ -68,6 +68,8 @@ ACCOUNT = {
 }
 
 SETTINGS = {
+        "start_date": None,
+        "end_date": None,
         "manual_order":[],
 
         "open_type":{
@@ -101,7 +103,6 @@ SETTINGS = {
             "groups":{},
         },
         "report":{},
-
                         }
 
 #订单状态

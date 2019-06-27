@@ -28,6 +28,14 @@ class BackTest():
 
         backtest = widget
 
+        start_date = backtest.findChild(QDateEdit, "start_date")
+        end_date = backtest.findChild(QDateEdit, "end_date")
+        if self.config["start_date"]: start_date.setDate(self.config["start_date"])
+        if self.config["end_date"]: end_date.setDate(self.config["end_date"])
+
+        start_date.dateChanged.connect(self.onStartDateChanged)
+        end_date.dateChanged.connect(self.onEndDateChanged)
+
         result_tree = backtest.findChild(QTreeWidget)
         result_tree.itemDoubleClicked.connect(self.onResultTreeDoubleClicked)
 
@@ -37,7 +45,7 @@ class BackTest():
                          os.path.splitext(i)[-1] == ".bt"]
         select_account.addItems(account_files)
         select_account.currentTextChanged.connect(self.onBacktestRunAccountChanged2)
-        select_account.setCurrentIndex(0)
+        select_account.setCurrentIndex(self.config["open_type"]["value"])
 
         open_type_list = backtest.findChild(QComboBox, "open_type")
         open_type_list.currentIndexChanged.connect(lambda event: self.onOpenTypeChanged(event))
@@ -45,6 +53,70 @@ class BackTest():
         start_button = backtest.findChild(QPushButton)
         start_button.clicked.connect(lambda event:self.onBacktestRun())
         self.backtest = backtest
+
+        self.loadResultTree(result_tree)
+
+    def loadResultTree(self, result_tree):
+        report = self.config.get("report", {})
+        if report == {}:
+            return
+        result_tree.clear()
+        self.positions = self.config.get("report", {}).get("positions", {})
+        self.orders = self.config.get("report", {}).get("orders", {})
+        self.performance = self.config.get("report", {}).get("performance", {})
+        self.cashs = self.config.get("report", {}).get("cash", {})
+
+        for text in ["资产", "仓位", "订单"]:
+            item = QTreeWidgetItem(result_tree)
+            item.setText(0, text)
+
+        position_dataframe = pd.DataFrame()
+        positions = self.positions.keys()
+        position_item = result_tree.topLevelItem(1)
+        for id in positions:
+            id_item = QTreeWidgetItem(position_item)
+            id_item.setText(0, id)
+            for date in self.positions[id].keys():
+                date_item = QTreeWidgetItem(id_item)
+                date_item.setText(0, date)
+                date_item.setWhatsThis(0, "position")
+                if position_dataframe.empty:
+                    position_dataframe = pd.DataFrame(self.positions[id][date])
+                else:
+                    position_dataframe = position_dataframe.append(pd.DataFrame(self.positions[id][date]),
+                                                                   ignore_index=True, sort=True)
+
+        order_item = result_tree.topLevelItem(2)
+        orders = self.orders.keys()
+        for order_id in orders:
+            id_item = QTreeWidgetItem(order_item)
+            id_item.setText(0, order_id)
+            for order_date in self.orders[order_id].keys():
+                date_item = QTreeWidgetItem(id_item)
+                date_item.setText(0, order_date)
+                date_item.setWhatsThis(0, "order")
+
+        if self.performance:
+            self.backtest.findChild(QLineEdit, "init_capital").setText(str(self.performance.init_capital))
+            self.backtest.findChild(QLineEdit, "profit_ratio").setText(str(self.performance.profit_ratio))
+            self.backtest.findChild(QLineEdit, "win_count").setText(str(self.performance.win_count))
+            self.backtest.findChild(QLineEdit, "lose_count").setText(str(self.performance.lose_count))
+            self.backtest.findChild(QLineEdit, "win_ratio").setText(str(self.performance.win_ratio))
+            self.backtest.findChild(QLineEdit, "average_win").setText(str(self.performance.average_win))
+            self.backtest.findChild(QLineEdit, "average_loss").setText(str(self.performance.average_loss))
+            self.backtest.findChild(QLineEdit, "max_draw_down").setText(str(self.performance.max_drawdown))
+            self.backtest.findChild(QLineEdit, "win_loss").setText(str(self.performance.win_loss))
+            self.backtest.findChild(QLineEdit, "final_capital").setText(str(self.performance.final_capital))
+        # self.backtest.findChild(QLineEdit, "performance_indicator").setText(str(performance_indicator))
+        return
+
+    def onStartDateChanged(self, date):
+        self.config["start_date"] = date
+        return
+
+    def onEndDateChanged(self, date):
+        self.config["end_date"] = date
+        return
 
     def onResultTreeDoubleClicked(self, item, column):
         text = item.text(column)
@@ -242,7 +314,14 @@ class BackTest():
         self.backtest.findChild(QLineEdit, "win_loss").setText(str(self.tc.performance.win_loss))
         self.backtest.findChild(QLineEdit, "final_capital").setText(str(self.tc.performance.final_capital))
         # self.backtest.findChild(QLineEdit, "performance_indicator").setText(str(performance_indicator))
-
+        self.performance = self.tc.performance
+        report = {
+            "positions": self.positions,
+            "orders": self.orders,
+            "performance": self.performance,
+            "cash": self.cashs
+        }
+        self.config["report"].update(report)
         self.tc = None
 
     def updateMarket(self):
