@@ -137,6 +137,9 @@
           </item>
           <item>
            <widget class="QDoubleSpinBox" name="price">
+            <property name="decimals">
+             <number>5</number>
+            </property>
             <property name="maximum">
              <double>10000000.000000000000000</double>
             </property>
@@ -213,6 +216,9 @@
           </item>
           <item>
            <widget class="QDoubleSpinBox" name="res_price">
+            <property name="decimals">
+             <number>6</number>
+            </property>
             <property name="maximum">
              <double>1000000000.000000000000000</double>
             </property>

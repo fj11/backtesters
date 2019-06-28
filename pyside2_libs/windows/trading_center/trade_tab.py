@@ -45,10 +45,10 @@ class BackTest():
                          os.path.splitext(i)[-1] == ".bt"]
         select_account.addItems(account_files)
         select_account.currentTextChanged.connect(self.onBacktestRunAccountChanged2)
-        select_account.setCurrentIndex(self.config["open_type"]["value"])
 
         open_type_list = backtest.findChild(QComboBox, "open_type")
         open_type_list.currentIndexChanged.connect(lambda event: self.onOpenTypeChanged(event))
+        open_type_list.setCurrentIndex(self.config["open_type"]["value"])
 
         start_button = backtest.findChild(QPushButton)
         start_button.clicked.connect(lambda event:self.onBacktestRun())

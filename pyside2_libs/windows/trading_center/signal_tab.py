@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+import pandas as pd
+
 from PySide2.QtWidgets import QTreeWidgetItem,\
     QAction, QComboBox, QLineEdit, \
     QTreeWidget, QSpinBox,\
@@ -8,6 +10,7 @@ from PySide2.QtCore import Qt
 from PySide2 import QtGui
 from PySide2.QtUiTools import QUiLoader
 
+from pyside2_libs.windows.grid_view import GridView
 from src import setting
 
 class SemiAutoSignal():
@@ -63,6 +66,40 @@ class SemiAutoSignal():
                         node.setCheckState(0, Qt.Unchecked)
                         node.setWhatsThis(0, "option_underlying")
                         node.setExpanded(True)
+
+                        data = underlying.get("id", {}).get("data", pd.DataFrame())
+                        if not data.empty:
+                            id_dict = underlying.get("id", {})
+                            name = id_dict["list"][id_dict["value"]]
+                            childSubWindow = {
+                                "title": "%s的当日合约",
+                                "type": "option_contract_table",
+                                "table_name": "%date%",
+                                "where": "",
+                                "select": id,
+                                "hidden_columns": [],
+                                "index_column": [],
+                                "childSubWindow": {},
+                            }
+                            hidden_columns = ['total_turnover',
+                                              'limit_up',
+                                              'limit_down',
+                                              'settlement',
+                                              'prev_settlement',
+                                              'discount_rate',
+                                              'acc_net_value',
+                                              'unit_net_value',
+                                              'date',
+                                              'open_interest',
+                                              'iopv',
+                                              'num_trades'
+                                              ]
+
+                            GridView(self.parent, name, data, id=name,
+                                                   hidden_columns=hidden_columns,
+                                                   index_column='date',
+                                                   childSubWindow=childSubWindow,
+                                                   type="option_underlying")
                         current_item = node
 
                         groups = underlying.get("groups", [])
@@ -167,7 +204,6 @@ class SemiAutoSignal():
             load_file = "backtest_option.ui"
             current_node = self.config["options"]
             self.current_node = current_node
-
         elif whats_this == "option_underlying":
             title = "标的 %s 的设置" % text
             load_file = "backtest_option_underlying.ui"
@@ -216,23 +252,21 @@ class SemiAutoSignal():
         self.group_box_layout.addWidget(setting_widget)
         self.group_box_widgets.append(setting_widget)
 
-
         # 连接各组件信号和展示数据
         if whats_this == "option":
-            ratio = self.backtest.findChild(QSpinBox, "ratio")
+            ratio = setting_widget.findChild(QSpinBox, "ratio")
             ratio.setValue(self.current_node["ratio"]["value"])
             ratio.valueChanged.connect(lambda event: self.onRatioChanged(event))
         elif whats_this == "option_underlying":
-            ratio = self.backtest.findChild(QSpinBox, "ratio")
+            ratio = setting_widget.findChild(QSpinBox, "ratio")
             ratio.setValue(self.current_node["ratio"]["value"])
-            self.backtest.findChild(QSpinBox, "ratio").valueChanged.connect(lambda event: self.onRatioChanged(event))
+            setting_widget.findChild(QSpinBox, "ratio").valueChanged.connect(lambda event: self.onRatioChanged(event))
 
-            underlying_list = self.backtest.findChild(QComboBox, "underlying_list")
+            underlying_list = setting_widget.findChild(QComboBox, "underlying_list")
             underlying_list.addItems(self.current_node["id"]["list"])
             underlying_list.currentIndexChanged.connect(lambda event: self.onUnderlyingListChanged(event))
             # underlying_list.setCurrentIndex(0)
-
-            signal_list = self.backtest.findChild(QComboBox, "signal_list")
+            signal_list = setting_widget.findChild(QComboBox, "signal_list")
             # signal_list.setCurrentIndex(current_node["signal"]["value"])
             ids = self.current_node["id"]["list"]
             if ids == []:
@@ -242,88 +276,92 @@ class SemiAutoSignal():
             if _sub_window is None:
                 self.parent.messageBox("没有找到标的")
                 return
+
+            underlying_list.setCurrentIndex(self.current_node["id"]["value"])
+
             columns = _sub_window.btData.columns
             signal_column = [i for i in columns if i.startswith("signal")]
             self.current_node["signal"]["list"] = signal_column
             signal_list.addItems(signal_column)
+            signal_list.setCurrentIndex(self.current_node["signal"]["value"])
             signal_list.currentIndexChanged.connect(lambda event: self.onSignalChanged(event))
 
-            side = self.backtest.findChild(QComboBox, "side")
+            side = setting_widget.findChild(QComboBox, "side")
             side.setCurrentIndex(self.current_node["option_side"]["value"])
             side.currentIndexChanged.connect(lambda event: self.onOptionSideChanged(event))
 
-            volume = self.backtest.findChild(QSpinBox, "volume")
+            volume = setting_widget.findChild(QSpinBox, "volume")
             volume.setValue(self.current_node["volume"]["value"])
             volume.valueChanged.connect(lambda event: self.onVolumeChanged(event))
 
         elif whats_this == "option_group":
 
-            ratio = self.backtest.findChild(QSpinBox, "ratio")
+            ratio = setting_widget.findChild(QSpinBox, "ratio")
             ratio.setValue(self.current_node["ratio"]["value"])
-            self.backtest.findChild(QSpinBox, "ratio").valueChanged.connect(lambda event: self.onRatioChanged(event))
+            setting_widget.findChild(QSpinBox, "ratio").valueChanged.connect(lambda event: self.onRatioChanged(event))
 
         elif whats_this == "option_contract":
-            contract_type = self.backtest.findChild(QComboBox, "contract_type")
+            contract_type = setting_widget.findChild(QComboBox, "contract_type")
             contract_type.setCurrentIndex(self.current_node["option_type"]["value"])
             contract_type.currentIndexChanged.connect(lambda event: self.onOptionContractTypeChanged(event))
 
-            option_side = self.backtest.findChild(QComboBox, "option_side")
+            option_side = setting_widget.findChild(QComboBox, "option_side")
             option_side.setCurrentIndex(self.current_node["option_side"]["value"])
             option_side.currentIndexChanged.connect(lambda event: self.onOptionSideChanged(event))
 
-            close_strategy = self.backtest.findChild(QComboBox, "close_strategy")
+            close_strategy = setting_widget.findChild(QComboBox, "close_strategy")
             close_strategy.setCurrentIndex(self.current_node["close_method"]["value"])
             close_strategy.currentIndexChanged.connect(lambda event: self.onCloseMethodChanged(event))
 
-            change_feq = self.backtest.findChild(QComboBox, "change_feq")
+            change_feq = setting_widget.findChild(QComboBox, "change_feq")
             change_feq.setCurrentIndex(self.current_node["change_feq"]["value"])
             change_feq.currentIndexChanged.connect(lambda event: self.onChangeFeqChanged(event))
 
-            move_condition = self.backtest.findChild(QComboBox, "move_condition")
+            move_condition = setting_widget.findChild(QComboBox, "move_condition")
             move_condition.setCurrentIndex(self.current_node["change_condition"]["value"])
             move_condition.currentIndexChanged.connect(lambda event: self.onChangeConditionChanged(event))
 
-            interval = self.backtest.findChild(QComboBox, "interval")
+            interval = setting_widget.findChild(QComboBox, "interval")
             interval.setCurrentIndex(self.current_node["month_interval"]["value"])
             interval.currentIndexChanged.connect(lambda event: self.onMonthIntervalChanged(event))
 
-            strike_interval = self.backtest.findChild(QComboBox, "strike_interval")
+            strike_interval = setting_widget.findChild(QComboBox, "strike_interval")
             strike_interval.setCurrentIndex(self.current_node["strike_interval"]["value"])
             strike_interval.currentIndexChanged.connect(lambda event: self.onStrikeIntervalChanged(event))
 
-            smart_match = self.backtest.findChild(QComboBox, "smart_match")
+            smart_match = setting_widget.findChild(QComboBox, "smart_match")
             smart_match.setCurrentIndex(self.current_node["smart_selection"]["value"])
             smart_match.currentIndexChanged.connect(lambda event: self.onSmartSelectionChanged(event))
 
-            volume = self.backtest.findChild(QSpinBox, "volume")
+            volume = setting_widget.findChild(QSpinBox, "volume")
             volume.setValue(self.current_node["volume"]["value"])
             volume.valueChanged.connect(lambda event: self.onVolumeChanged(event))
 
-            deposit_ratio = self.backtest.findChild(QDoubleSpinBox, "deposit_ratio")
+            deposit_ratio = setting_widget.findChild(QDoubleSpinBox, "deposit_ratio")
             deposit_ratio.setValue(self.current_node["deposit_coefficient"]["value"])
             deposit_ratio.valueChanged.connect(lambda event: self.onDepositCoefficient(event))
 
-            delta = self.backtest.findChild(QDoubleSpinBox, "delta")
+            delta = setting_widget.findChild(QDoubleSpinBox, "delta")
             delta.setValue(self.current_node["delta"]["value"])
             delta.valueChanged.connect(lambda event: self.onDeltaChanged(event))
 
-            gamma = self.backtest.findChild(QDoubleSpinBox, "gamma")
+            gamma = setting_widget.findChild(QDoubleSpinBox, "gamma")
             gamma.setValue(self.current_node["gamma"]["value"])
             gamma.valueChanged.connect(lambda event: self.onGammaChanged(event))
 
-            theta = self.backtest.findChild(QDoubleSpinBox, "theta")
+            theta = setting_widget.findChild(QDoubleSpinBox, "theta")
             theta.setValue(self.current_node["theta"]["value"])
             theta.valueChanged.connect(lambda event: self.onThetaChanged(event))
 
-            vega = self.backtest.findChild(QDoubleSpinBox, "vega")
+            vega = setting_widget.findChild(QDoubleSpinBox, "vega")
             vega.setValue(self.current_node["vega"]["value"])
             vega.valueChanged.connect(lambda event: self.onVegaChanged(event))
 
-            rho = self.backtest.findChild(QDoubleSpinBox, "rho")
+            rho = setting_widget.findChild(QDoubleSpinBox, "rho")
             rho.setValue(self.current_node["rho"]["value"])
             rho.valueChanged.connect(lambda event: self.onRhoChanged(event))
 
-            ivix = self.backtest.findChild(QDoubleSpinBox, "ivix")
+            ivix = setting_widget.findChild(QDoubleSpinBox, "ivix")
             ivix.setValue(self.current_node["ivix"]["value"])
             ivix.valueChanged.connect(lambda event: self.onIvixChanged(event))
 
@@ -433,6 +471,7 @@ class SemiAutoSignal():
             node.setCheckState(0, Qt.Unchecked)
             node.setWhatsThis(0, "option_underlying")
             self.backtest_tree.expandItem(self.backtest_tree.currentItem())
+            ids = [i.btId for i in self.mdi_area.subWindowList() if hasattr(i, "btType") and i.btType in ["option_underlying", "excel", "csv"]]
             group_dict = {
                 "name": text,
                 "enable": 0,
@@ -443,7 +482,8 @@ class SemiAutoSignal():
                 "id": {
                     "type": "list",
                     "value": 0,
-                    "list": [i.btId for i in self.mdi_area.subWindowList() if hasattr(i, "btType") and i.btType in ["option_underlying", "excel", "csv"]]
+                    "list": ids,
+                    "data": getattr(self.parent.getSubWindowByAttribute("btId", ids[0]), "btData")
                 },
                 "signal": {
                     "type": "list",
@@ -463,7 +503,6 @@ class SemiAutoSignal():
                 "contracts":[],
             }
             self.config["options"]["underlyings"].append(group_dict)
-
 
     def onAddOptionGroup(self):
         text, ok = QInputDialog.getText(self.backtest, "请输入期权组名称", "名称", QLineEdit.Normal)
