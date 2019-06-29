@@ -14,7 +14,8 @@ from pyside2_libs.windows.grid_view import GridView
 from src import setting
 
 class SemiAutoSignal():
-    def __init__(self, widget, main_widget, config):
+    def __init__(self, widget, main_widget, config, delete_backtest_tree_item, add_option_underlying,
+                                  add_option_group, add_option_contract, no_support):
         self.parent = main_widget
 
         self.config = config
@@ -24,11 +25,7 @@ class SemiAutoSignal():
         backtest = widget
         self.backtest = backtest
 
-        self.delete_backtest_tree_item = backtest.findChild(QAction, "action_delete")
-        self.add_option_underlying = backtest.findChild(QAction, "action_add_option_underlying")
-        self.add_option_group = backtest.findChild(QAction, "action_add_option_group")
-        self.add_option_contract = backtest.findChild(QAction, "action_add_option_contract")
-        self.no_support = backtest.findChild(QAction, "action_no_support")
+
 
         self.group_box = backtest.findChild(QGroupBox, "backtest_box")
         self.group_box_layout = QVBoxLayout()
@@ -37,13 +34,13 @@ class SemiAutoSignal():
         self.backtest_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.backtest_tree.topLevelItem(0).setExpanded(True)
 
-        self.add_option_underlying.triggered.connect(self.onAddOptionUnderlying)
-        self.add_option_group.triggered.connect(self.onAddOptionGroup)
-        self.add_option_contract.triggered.connect(self.onAddOptionContract)
+        add_option_underlying.triggered.connect(self.onAddOptionUnderlying)
+        add_option_group.triggered.connect(self.onAddOptionGroup)
+        add_option_contract.triggered.connect(self.onAddOptionContract)
         self.backtest_tree.itemDoubleClicked.connect(self.onBackTestTreeDoubleClicked)
         self.backtest_tree.customContextMenuRequested.connect(lambda event: self.onBackTestTreeRightClicked())
 
-        self.delete_backtest_tree_item.triggered.connect(self.onDeleteBackTestTreeItem)
+        delete_backtest_tree_item.triggered.connect(self.onDeleteBackTestTreeItem)
 
         self.loadBacktestTree()
 

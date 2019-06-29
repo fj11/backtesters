@@ -13,12 +13,11 @@ from src import sql
 
 class ManualSignal():
 
-    def __init__(self, widget, main_widget, config):
+    def __init__(self, widget, main_widget, config, action_delete_order):
         self.config = config
 
         self.main_widget = main_widget
         manual_create_order = widget
-        manual_create_order.setWindowTitle("手动下单")
         self.manual_create_order = manual_create_order
 
         order_type = manual_create_order.findChild(QComboBox, "order_type")
@@ -29,7 +28,7 @@ class ManualSignal():
         order_tree = manual_create_order.findChild(QTreeWidget, "mtree")
         order_tree.setContextMenuPolicy(Qt.CustomContextMenu)
 
-        self.manual_create_order.findChild(QAction, "delete_order").triggered.connect(lambda event:self.onDeleteOrder())
+        action_delete_order.triggered.connect(lambda event:self.onDeleteOrder())
         order_tree.itemClicked.connect(lambda event:self.onOrderTreeClicked(event))
         order_tree.customContextMenuRequested.connect(lambda event:self.onOrderTreeRightClicked())
         order_type.currentTextChanged.connect(lambda event:self.onOrderTypeChanged(event))

@@ -140,7 +140,6 @@
    <addaction name="actionsettings"/>
    <addaction name="separator"/>
    <addaction name="actionupdate"/>
-   <addaction name="action_filter"/>
    <addaction name="separator"/>
    <addaction name="actionfunction"/>
    <addaction name="separator"/>
@@ -393,8 +392,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>274</width>
-              <height>530</height>
+              <width>98</width>
+              <height>89</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -557,8 +556,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>274</width>
-              <height>530</height>
+              <width>98</width>
+              <height>89</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -605,8 +604,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>274</width>
-              <height>530</height>
+              <width>98</width>
+              <height>89</height>
              </rect>
             </property>
             <attribute name="icon">
