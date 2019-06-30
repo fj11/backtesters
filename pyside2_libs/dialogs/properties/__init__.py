@@ -1,14 +1,14 @@
+# encoding: utf-8
 
-import os, pickle
 from PySide2.QtUiTools import QUiLoader
 
-from PySide2.QtWidgets import QTreeWidgetItem, \
-    QListWidget, QComboBox, QDialogButtonBox, QLineEdit, \
-    QTabWidget, QTreeWidget, QSpinBox, QLabel, QGroupBox, QPushButton,\
-    QDoubleSpinBox, QTextEdit
+from PySide2.QtWidgets import \
+    QListWidget, QDialogButtonBox,\
+    QTabWidget, QTreeWidget
 
 from . import columns_display, filter_display
-from src import setting
+
+import copy
 
 class Properties():
 
@@ -32,7 +32,12 @@ class Properties():
         filter_widget = tab_widget.widget(1)
 
         columns_display.ColumnsDisplay(columns_display_widget, parent, columns, hidden_columns)
-        filter_display.FilterDisplay(filter_widget, columns)
+
+        if hasattr(sub_window, "filter_condition"):
+            filter_condition = getattr(sub_window, "filter_condition")
+        else:
+            filter_condition = []
+        filter_display.FilterDisplay(filter_widget, columns, filter_condition)
 
         button_box = widget.findChild(QDialogButtonBox, "buttonBox")
         button_box.accepted.connect(lambda : self.onGridDisplayAccept())
@@ -47,10 +52,40 @@ class Properties():
 
         hide_list = self.widget.findChild(QListWidget, "hide_list")
         items_text = [hide_list.item(i).text() for i in range(hide_list.count())]
-        setattr(self.sub_window, "hidden_columns", items_text)
-        data = getattr(self.sub_window, "btData")
+        hidden_coumns = getattr(self.sub_window, "hidden_columns")
+        data = copy.deepcopy(getattr(self.sub_window, "btData"))
+        if not hidden_coumns == items_text:
+            setattr(self.sub_window, "hidden_columns", items_text)
+
+        filter_tree = self.widget.findChild(QTreeWidget)
+        setattr(self.sub_window, "filter_condition", [])
+        for i in range(filter_tree.topLevelItemCount()):
+            item = filter_tree.topLevelItem(i)
+            columns_list = filter_tree.itemWidget(item, 0)
+            condition_list = filter_tree.itemWidget(item, 1)
+            value_line = filter_tree.itemWidget(item, 2)
+            value = value_line.text().strip()
+            if value:
+                columns_value = columns_list.currentText()
+                condition_value = condition_list.currentText()
+                if columns_value != "date":
+                    value = float(value)
+                if condition_value == "大于":
+                    data = data[data[columns_value] > value]
+                elif condition_value == "大于且等于":
+                    data = data[data[columns_value] >= value]
+                elif condition_value == "小于":
+                    data = data[data[columns_value] < value]
+                elif condition_value == "小于且等于":
+                    data = data[data[columns_value] <= value]
+                elif condition_value == "等于":
+                    data = data[data[columns_value] == value]
+                elif condition_value == "包含于":
+                    data = data[data[columns_value].contains(value)]
+                condition = [columns_value, condition_value, value]
+                filter_condition = getattr(self.sub_window, "filter_condition")
+                filter_condition.append(condition)
         self.parent.display_table(data, self.sub_window)
-        return
 
     def onGridDisplayReject(self):
         return
