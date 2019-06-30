@@ -21,7 +21,7 @@ from PySide2.QtCore import QObject, Qt
 from src import sql, pandas_mode, setting
 from. import dialogs
 from pyside2_libs.windows import trading_center, grid_view
-from pyside2_libs.dialogs import properties
+from pyside2_libs.dialogs import properties, functions, signals, accounts
 
 ROOT = os.path.normpath(os.path.join(os.curdir, ".."))
 
@@ -337,14 +337,14 @@ class BT(QObject):
         return None
 
     def onAccounts(self):
-        dialogs.Accounts(self, self.window)
+        accounts.Accounts(self, self.window)
 
     def onActionSignal(self):
         current_window = self.mdi_area.currentSubWindow()
         if current_window is None or not hasattr(current_window, "btData"):
             self.messageBox("请先打开数据")
             return
-        dialogs.Signal(self, self.window, current_window)
+        signals.Signals(self, self.window, current_window)
 
     def onActionFunction(self):
 
@@ -352,7 +352,7 @@ class BT(QObject):
         if current_window is None or not hasattr(current_window, "btData"):
             self.messageBox("请先打开数据")
             return
-        dialogs.Function(self, self.window, current_window)
+        functions.Functions(self, self.window, current_window)
         return
 
     def onOptionListDoubleClicked(self):
