@@ -66,7 +66,6 @@
      <string>数据</string>
     </property>
     <addaction name="actionupdate"/>
-    <addaction name="action_filter"/>
    </widget>
    <widget class="QMenu" name="indicator">
     <property name="title">
@@ -103,7 +102,6 @@
      <string>订单</string>
     </property>
     <addaction name="action_signal"/>
-    <addaction name="action_manul_signal"/>
    </widget>
    <widget class="QMenu" name="menu">
     <property name="title">
@@ -144,7 +142,6 @@
    <addaction name="actionfunction"/>
    <addaction name="separator"/>
    <addaction name="action_signal"/>
-   <addaction name="action_manul_signal"/>
    <addaction name="separator"/>
    <addaction name="actionstart_backtest"/>
    <addaction name="separator"/>
@@ -392,8 +389,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>89</height>
+              <width>274</width>
+              <height>530</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -556,8 +553,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>89</height>
+              <width>274</width>
+              <height>530</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -604,8 +601,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>89</height>
+              <width>274</width>
+              <height>530</height>
              </rect>
             </property>
             <attribute name="icon">

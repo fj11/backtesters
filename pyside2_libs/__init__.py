@@ -11,10 +11,10 @@ from PySide2.QtXml import QDomNode
 ############################################
 
 from PySide2.QtUiTools import QUiLoader
-from PySide2.QtWidgets import QMdiArea, QTreeWidgetItem, \
+from PySide2.QtWidgets import QMdiArea, \
     QMessageBox, QTableView, QToolBox,\
     QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
-    QTreeWidget, QSpinBox, QPushButton, QFileDialog,\
+    QSpinBox, QPushButton, QFileDialog,\
     QSlider
 from PySide2.QtCore import QObject, Qt
 
