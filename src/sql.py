@@ -1,10 +1,7 @@
 # encoding: UTF-8
 import os
 import pandas as pd
-try:
-    from pysqlcipher3 import dbapi2 as sqlite3
-except:
-    import sqlite3
+from pysqlcipher3 import dbapi2 as sqlite3
 
 DB_FILE = os.path.normpath(os.path.join(os.path.dirname(__file__), "../db/bt.db"))
 SQL = sqlite3.connect(DB_FILE, check_same_thread=False)
