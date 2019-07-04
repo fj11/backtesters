@@ -7,14 +7,20 @@ added_files = [
                 ('db/bt.db', 'db'),
                 ('icon', 'icon'),
                 ('ui/*.ui', 'ui'),
-                ('accounts/*.bt', 'accounts'),
-                ('tmp/*', 'tmp'),
+                ('accounts', 'accounts'),
+                ('tmp', 'tmp'),
                 ('images/*', 'images')
             ]
 
+add_binaries = [
+
+                ("dlls/libeay32.dll", "."),
+                ("dlls/msvcr120.dll", ".")
+]
+
 a = Analysis(['backtester.py'],
              pathex=['C:\\Users\\14387\\PycharmProjects\\backtesters'],
-             binaries=[],
+             binaries=add_binaries,
              datas=added_files,
              hiddenimports=[],
              hookspath=[],
@@ -24,8 +30,10 @@ a = Analysis(['backtester.py'],
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False)
+
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
+
 exe = EXE(pyz,
           a.scripts,
           [],
@@ -35,7 +43,8 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=False )
+          console=False)
+
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,

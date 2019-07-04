@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../icon/icon.ico</normaloff>../icon/icon.ico</iconset>
+  </property>
   <property name="iconSize">
    <size>
     <width>24</width>
@@ -389,8 +393,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>274</width>
-              <height>530</height>
+              <width>98</width>
+              <height>89</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -553,8 +557,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>274</width>
-              <height>530</height>
+              <width>98</width>
+              <height>89</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -601,8 +605,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>274</width>
-              <height>530</height>
+              <width>98</width>
+              <height>89</height>
              </rect>
             </property>
             <attribute name="icon">
