@@ -7,8 +7,6 @@ added_files = [
                 ('db/bt.db', 'db'),
                 ('icon', 'icon'),
                 ('ui/*.ui', 'ui'),
-                ('accounts', 'accounts'),
-                ('tmp', 'tmp'),
                 ('images/*', 'images')
             ]
 
