@@ -25,6 +25,10 @@ class SemiAutoSignal():
         backtest = widget
         self.backtest = backtest
 
+        self.add_option_underlying = add_option_underlying
+        self.add_option_group = add_option_group
+        self.add_option_contract = add_option_contract
+        self.no_support = no_support
 
 
         self.group_box = backtest.findChild(QGroupBox, "backtest_box")
