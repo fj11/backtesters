@@ -41,6 +41,8 @@ class BackTest():
 
         select_account = backtest.findChild(QComboBox, "account")
         account_folder = os.path.normpath(os.path.join(self.root, "accounts"))
+        if not os.path.isdir(account_folder):
+            os.mkdir(account_folder)
         account_files = [os.path.splitext(i)[0] for i in os.listdir(account_folder) if
                          os.path.splitext(i)[-1] == ".bt"]
         select_account.addItems(account_files)

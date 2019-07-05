@@ -28,6 +28,8 @@ class Accounts():
         self.delete_account_button.clicked.connect(self.onDeleteAccount)
         self.account_list.itemClicked.connect(self.onAccountListClicked)
         account_folder = os.path.normpath(os.path.join(self.root, "accounts"))
+        if not os.path.isdir(account_folder):
+            os.mkdir(account_folder)
         files = [f for f in os.listdir(account_folder) if
                  os.path.isfile(os.path.normpath(os.path.join(account_folder, f))) and f.endswith("bt")]
         for f in files:
