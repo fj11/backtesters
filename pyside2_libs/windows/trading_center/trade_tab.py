@@ -196,7 +196,8 @@ class BackTest():
         pass
 
     def onBacktestRun(self):
-        self.beforeRun()
+        if not self.beforeRun():
+            return
         start_date = self.backtest.findChild(QDateEdit, "start_date").date()
         end_date = self.backtest.findChild(QDateEdit, "end_date").date()
         current_date = start_date
@@ -265,12 +266,16 @@ class BackTest():
 
         account_name = self.backtest.findChild(QComboBox, "account").currentText()
         file_name = os.path.normpath(os.path.join(self.root, "accounts", "%s.bt" % account_name))
+        if not os.path.isfile(file_name):
+            self.parent.messageBox("需要创建测试账户")
+            return False
         with open(file_name, "rb") as f:
             data = pickle.load(f)
             self.config["account"] = data
             self.tc = tradeCenter.TradeCenter(data)
         result_tree = self.backtest.findChild(QTreeWidget, "result_tree")
         result_tree.clear()
+        return True
 
     def afterRun(self):
         result_tree = self.backtest.findChild(QTreeWidget, "result_tree")
