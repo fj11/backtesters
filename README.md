@@ -61,3 +61,9 @@
 ```bat
 > makefile.bat
 ```
+
+## Test
+> Double click test.bat or execute test.bat in command line mode to run the automation test process
+```bat
+> test.bat
+```
