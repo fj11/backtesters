@@ -7,3 +7,5 @@ pip install matplotlib
 pip install pyinstaller
 pip install wmi
 pip install pyin32
+pip install xlrd
+pip install xlwt

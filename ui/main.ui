@@ -17,6 +17,9 @@
    <iconset>
     <normaloff>../icon/icon.ico</normaloff>../icon/icon.ico</iconset>
   </property>
+  <property name="locale">
+   <locale language="Chinese" country="China"/>
+  </property>
   <property name="iconSize">
    <size>
     <width>24</width>
@@ -393,8 +396,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>89</height>
+              <width>274</width>
+              <height>530</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -407,6 +410,9 @@
             <layout class="QHBoxLayout" name="horizontalLayout_4">
              <item>
               <widget class="QTableWidget" name="future_table_view">
+               <property name="editTriggers">
+                <set>QAbstractItemView::NoEditTriggers</set>
+               </property>
                <property name="selectionBehavior">
                 <enum>QAbstractItemView::SelectRows</enum>
                </property>
@@ -557,8 +563,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>89</height>
+              <width>274</width>
+              <height>530</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -605,8 +611,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>89</height>
+              <width>274</width>
+              <height>530</height>
              </rect>
             </property>
             <attribute name="icon">
