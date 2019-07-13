@@ -483,7 +483,8 @@ class BT(QObject):
                           'round_lot',
                           'strike_price',
                           'symbol',
-                          'trading_hours'
+                          'trading_hours',
+                          'underlying_order_book_id'
                           ]
         data.dropna(axis=0, how='any', inplace=True)
         data.drop_duplicates("underlying_order_book_id", inplace=True)
@@ -494,6 +495,7 @@ class BT(QObject):
         else:
             grid_view.GridView(self, name, data, id=id,
                                     hidden_columns=hidden_columns,
+                                    index_column="underlying_order_book_id",
                                     childSubWindow={
                                         "title":id,
                                         "type":"option_underlying_table",
