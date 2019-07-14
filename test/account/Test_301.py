@@ -18,10 +18,13 @@ class TestCase(TestSuite):
 
         self.input(auto_id="MainWindow.Dialog.Dialog.name", control_type="Edit", message=self.account_name)
         self.find_element(title="账户设置", auto_id="MainWindow.Dialog.Dialog", control_type="Window").child_window(title="OK", control_type="Button").click_input()
-        self.find_element(title=self.account_name, control_type="ListItem")
+        self.click(title=self.account_name, control_type="ListItem")
+        self.click(title="删除账户", auto_id="MainWindow.Dialog.widget.delete_account", control_type="Button")
+        self.assertFalse(os.path.isfile("accounts/%s.bt" % self.account_name))
 
     def clear_data(self):
-        os.remove("accounts/%s.bt" % self.account_name)
+        if os.path.isfile("accounts/%s.bt" % self.account_name):
+            os.remove("accounts/%s.bt" % self.account_name)
 
 if __name__ == '__main__':
     TestCase.main()
