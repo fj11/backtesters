@@ -5,7 +5,7 @@ import os
 
 class TestCase(TestSuite):
 
-    name = "The future's option data can be opened"
+    name = "the signal dialog works well"
 
     def test(self):
 
