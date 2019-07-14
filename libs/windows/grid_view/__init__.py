@@ -17,7 +17,7 @@ from matplotlib.font_manager import FontProperties
 
 from src import pandas_mode
 
-from pyside2_libs.windows.plot import Plot
+from libs.windows.plot import Plot
 
 font = FontProperties(fname=r"c:\windows\fonts\simsun.ttc", size=14)
 

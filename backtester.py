@@ -6,7 +6,7 @@ from PySide2.QtGui import QPixmap, QIcon
 
 os.chdir("ui")
 os.environ["QT_API"] = "PySide2"
-from pyside2_libs import BT
+from libs import BT
 
 class App:
     def __init__(self):

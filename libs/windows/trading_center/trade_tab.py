@@ -13,7 +13,7 @@ from PySide2.QtWidgets import QTreeWidgetItem, \
     QDoubleSpinBox, QDateEdit, QProgressBar
 from PySide2.QtCore import Qt
 
-from pyside2_libs.windows.grid_view import GridView
+from libs.windows.grid_view import GridView
 from src import sql, tradeCenter, setting
 
 class BackTest():

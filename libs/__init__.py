@@ -20,8 +20,8 @@ from PySide2.QtCore import QObject, Qt
 
 from src import sql, pandas_mode, setting
 from. import dialogs
-from pyside2_libs.windows import trading_center, grid_view
-from pyside2_libs.dialogs import properties, functions, signals, accounts
+from libs.windows import trading_center, grid_view
+from libs.dialogs import properties, functions, signals, accounts
 
 ROOT = os.path.normpath(os.path.join(os.curdir, ".."))
 

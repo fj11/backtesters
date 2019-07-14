@@ -10,7 +10,7 @@ from PySide2.QtCore import Qt
 from PySide2 import QtGui
 from PySide2.QtUiTools import QUiLoader
 
-from pyside2_libs.windows.grid_view import GridView
+from libs.windows.grid_view import GridView
 from src import setting
 
 class SemiAutoSignal():

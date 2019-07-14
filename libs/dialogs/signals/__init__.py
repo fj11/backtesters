@@ -67,8 +67,8 @@ class Signals():
         close_list2_row_number = close_signal_list2.currentRow()
 
         if close_list1_row_number >= 0 and close_list2_row_number >= 0:
-            close_list1_text = open_signal_list1.currentItem().text()
-            close_list2_text = open_signal_list2.currentItem().text()
+            close_list1_text = close_signal_list1.currentItem().text()
+            close_list2_text = close_signal_list2.currentItem().text()
             close_col1 = data.loc[:, close_list1_text]
             close_col2 = data.loc[:, close_list2_text]
             close_signal = self.__calculate_signal(close_signal_text, close_col1, close_col2, -1)
