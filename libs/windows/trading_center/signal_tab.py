@@ -29,6 +29,7 @@ class SemiAutoSignal():
         self.add_option_group = add_option_group
         self.add_option_contract = add_option_contract
         self.no_support = no_support
+        self.delete_backtest_tree_item = delete_backtest_tree_item
 
 
         self.group_box = backtest.findChild(QGroupBox, "backtest_box")
