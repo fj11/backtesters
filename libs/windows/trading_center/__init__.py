@@ -3,6 +3,7 @@
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import \
     QMdiSubWindow, QTabWidget, QAction
+from PySide2.QtCore import Qt
 from src import setting
 from . import manual_tab, trade_tab, signal_tab
 
@@ -32,5 +33,5 @@ class TradeCenterWidget():
         trade_tab.BackTest(tab_widget.widget(2), parent, config)
         subWindow.setWidget(backtest_management)
         parent.mdi_area.addSubWindow(subWindow)
-
+        subWindow.setAttribute(Qt.WA_DeleteOnClose)
         subWindow.show()
