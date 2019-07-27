@@ -794,25 +794,28 @@ class BackTest():
         elif signal == -1:
             for id in option_contract_setting["ids"]:
                 position = self.tc.optionContractPosition.get(id, None)
-                volume = position.volume
                 if position:
-                    tick_table = "option/contracts/%s" % id
-                    contract_table = "option/contract"
-                    contract_dataframe = sql.read(contract_table, where="order_book_id='%s'" % id)
-                    option_tick = sql.read(tick_table, where="date='%s'" % tick.date)
-                    option_tick["order_book_id"] = id
-                    option = contract_dataframe.merge(option_tick, on="order_book_id", how="inner", suffixes=('_',''))
-                    option = option.T.squeeze()
-                    if option_side == 0:
-                        self.sell_option_contract(tick, option, option_contract_setting, volume)
-                    elif option_side == 1:
-                        self.cover_option_contract(tick, option, option_contract_setting, volume)
+                    volume = position.volume
+                    if position:
+                        tick_table = "option/contracts/%s" % id
+                        contract_table = "option/contract"
+                        contract_dataframe = sql.read(contract_table, where="order_book_id='%s'" % id)
+                        option_tick = sql.read(tick_table, where="date='%s'" % tick.date)
+                        option_tick["order_book_id"] = id
+                        option = contract_dataframe.merge(option_tick, on="order_book_id", how="inner", suffixes=('_',''))
+                        option = option.T.squeeze()
+                        if option_side == 0:
+                            self.sell_option_contract(tick, option, option_contract_setting, volume)
+                        elif option_side == 1:
+                            self.cover_option_contract(tick, option, option_contract_setting, volume)
         elif signal == 0:
             for id in option_contract_setting["ids"]:
                 contract_dataframe = option_dataframe[option_dataframe["order_book_id"] == id]
                 contract_dataframe = contract_dataframe.T.squeeze()
                 if tick.date[:10] == contract_dataframe.maturity_date:
                     position = self.tc.optionContractPosition.get(id, None)
+                    if position is None:
+                        continue
                     tick_table = "option/contracts/%s" % id
                     option_tick = sql.read(tick_table, where="date='%s'" % tick.date)
                     option_tick = option_tick.T.squeeze()
@@ -949,7 +952,10 @@ class BackTest():
         order.deposit_coefficient = deposit_coefficient
         response = self.tc.onOptionContractOrder(order)
         if response.ord_rej_reason == 0:
-            option_contract_setting["ids"] = [order.sec_id]
+            if "ids" in option_contract_setting:
+                option_contract_setting["ids"].append(order.sec_id)
+            else:
+                option_contract_setting["ids"] = [order.sec_id]
         self.__save_order(order, response)
 
     def short_option_contract(self, option_underlying_tick, option_contract_tick, option_contract_setting, volume):
@@ -977,6 +983,8 @@ class BackTest():
         response = self.tc.onOptionContractOrder(order)
         if response.ord_rej_reason == 0:
             if "ids" in option_contract_setting:
+                option_contract_setting["ids"].append(order.sec_id)
+            else:
                 option_contract_setting["ids"] = [order.sec_id]
         self.__save_order(order, response)
 
@@ -1024,7 +1032,8 @@ class BackTest():
         order.sending_time = option_underlying_tick.date
         response = self.tc.onOptionContractOrder(order)
         if response.ord_rej_reason == 0:
-            option_contract_setting["ids"].remove(order.sec_id)
+            if "ids" in option_contract_setting:
+                option_contract_setting["ids"].remove(order.sec_id)
         self.__save_order(order, response)
 
     def short(self, volume, tick):
