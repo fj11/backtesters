@@ -2,6 +2,7 @@
 import os
 import time
 import unittest
+import pywinauto
 from pywinauto import Application
 
 class TestSuites(unittest.TestCase):
@@ -16,8 +17,9 @@ class TestSuites(unittest.TestCase):
         app = Application(backend="uia").start('backtester.exe')
         self.app = app[u'回测者']
 
-    def find_elements(self, title_re="", control_type=""):
-        return self.app.child_window(title_re=title_re, control_type=control_type)
+    def find_elements(self, title="", control_type=""):
+        handle = pywinauto.findwindows.find_windows(title="", control_type=""    )
+        return self.app.window_(handle=handle)
 
     def find_element(self, title=None, control_type=None, auto_id=None, title_re=None):
         return self.app.child_window(title=title, control_type=control_type, auto_id=auto_id, title_re=title_re)

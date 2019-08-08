@@ -17,7 +17,7 @@ TODAY = datetime.datetime.today()
 TODAY_STR = TODAY.strftime('%Y%m%d')
 START_DATE_STR = START_DATE.strftime("%Y%m%d")
 DELTA = datetime.timedelta(days=1)
-# #print rq.get_price('510050.XSHG','2017-3-23','2018-3-23')
+print(rq.get_price('510050.XSHG','2017-3-23','2018-3-23'))
 # Opts = rq.all_instruments(type="Option")
 # order_book_id = Opts.loc[0,"order_book_id"]
 # print order_book_id

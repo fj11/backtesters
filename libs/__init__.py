@@ -20,7 +20,7 @@ from PySide2.QtCore import QObject, Qt
 
 from src import sql, pandas_mode, setting
 from. import dialogs
-from libs.windows import trading_center, grid_view
+from libs.windows import trading_center, grid_view, data_center, coding
 from libs.dialogs import properties, functions, signals, accounts
 
 ROOT = os.path.normpath(os.path.join(os.curdir, ".."))
@@ -128,6 +128,8 @@ class BT(QObject):
         self.window.findChild(QAction, "action_delete_column").triggered.connect(self.onDeleteColumn)
         self.window.findChild(QAction, "action_registration").triggered.connect(self.registration)
         self.window.findChild(QAction, "actionupdate").triggered.connect(self.update)
+        self.window.findChild(QAction, "actioncoding").triggered.connect(self.code)
+
 
     def onDeleteColumn(self):
         current_window = self.mdi_area.currentSubWindow()
@@ -209,9 +211,11 @@ class BT(QObject):
         return
 
     def update(self):
-        #TODO
+        data_center.DataCenterWidget(self, self.window)
         return
-        # subWindows.RQData(self, self.window, self.mdi_area)
+
+    def code(self):
+        coding.CodingWidget(self, self.window)
 
     def onDisplay(self):
 

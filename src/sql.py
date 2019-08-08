@@ -72,7 +72,7 @@ if __name__ == "__main__":
     # for name, group in read("option/contract").groupby(["underlying_order_book_id"]):
     #     print group.columns
     #     break
-    print(read("option/underlyings/510050.XSHG"))
+    print(read("option/contracts/10000001").date)
     # print(read("option/underlyings/M1803", select="close", where="date='2017-03-15 00:00:00'").at[0, "close"])
     # print(read("option/contracts/10001307").columns)
     # d = read('option/contract')
