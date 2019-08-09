@@ -8,12 +8,12 @@ from .query import Query
 
 class Stock(QThread):
 
-    def __init__(self, parent):
+    def __init__(self, root, parent):
         QThread.__init__(self)
 
         self.query = Query()
-        self.root = parent.parent.root
         self.parent = parent
+        self.root = root
         self._enabled = False
         self.local_sql = None
 

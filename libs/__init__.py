@@ -9,7 +9,7 @@ import pandas as pd
 ################ 不可以删除 ##################
 from PySide2.QtXml import QDomNode
 ############################################
-
+import xml.etree.ElementTree as ET
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QMdiArea, \
     QMessageBox, QTableView, QToolBox,\
@@ -58,6 +58,8 @@ class BT(QObject):
         self.window = loader.load(ui_file)
         self.window.setWindowTitle("回测者")
         #self.window.setWindowIcon("")
+
+        self.config = ET.parse(os.path.normpath(os.path.join(self.root, 'backtesters')))
 
         self.guid = get_uuid()
 
