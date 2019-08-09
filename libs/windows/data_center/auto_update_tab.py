@@ -33,16 +33,12 @@ class AutoUpdate():
         monthly_update.clicked.connect(lambda event: self.checked(3))
         startup_update.clicked.connect(lambda event: self.checked(4))
 
-        pass
 
     def checked(self, type):
-
         update_config = self.update_config
         if int(type) != int(self.fre_value):
             update_config.set("freqency", str(type))
-
             self.config.write(os.path.normpath(os.path.join(self.root, "backtesters")))
-        pass
 
 
 

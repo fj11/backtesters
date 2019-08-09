@@ -2,7 +2,7 @@
 
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import \
-    QMdiSubWindow, QTabWidget, QAction, QPushButton, QTextEdit, QProgressBar, QTabWidget
+    QMdiSubWindow, QTabWidget
 from PySide2.QtCore import Qt
 
 
