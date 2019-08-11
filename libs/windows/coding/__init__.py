@@ -50,7 +50,8 @@ class CodingWidget():
 # encoding: utf-8
 %s
 %s
-%s""" % ("from talib.abstract import *", "import numpy as np\n", string)
+%s
+%s""" % ("from talib.abstract import *", "import numpy as np", "import pandas as pd\n", string)
                 exec(string,  self.init_env())
                 output = s.getvalue()
                 self.result_display.setText(str(output))
