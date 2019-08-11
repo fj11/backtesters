@@ -20,9 +20,10 @@ def stdoutIO(stdout=None):
 
 class CodingWidget():
 
-    def __init__(self, parent, parent_widget):
+    def __init__(self, parent, parent_widget, data=None):
         self.parent = parent
         subWindow = QMdiSubWindow()
+        self.sub_window = subWindow
         loader = QUiLoader()
         python_editor = loader.load('coding.ui', parentWidget=parent_widget)
 
@@ -33,17 +34,25 @@ class CodingWidget():
         python_editor.findChild(QPushButton, "run").clicked.connect(lambda :self.onRunButton())
         python_editor.findChild(QPushButton, "cancel").clicked.connect(lambda: self.onCancelButton())
 
+        self.code_string.textChanged.connect(lambda :self.onCodeChanged())
+        if data:
+            self.code_string.setPlainText(data)
+
+        setattr(subWindow, "subWindowType", 2)
+        setattr(subWindow, "btData", '')
+        setattr(subWindow, "btFilePath", None)
         subWindow.setWidget(python_editor)
         parent.mdi_area.addSubWindow(subWindow)
         subWindow.setAttribute(Qt.WA_DeleteOnClose)
         subWindow.show()
 
+    def onCodeChanged(self):
+        setattr(self.sub_window, "btData", self.code_string.toPlainText())
+
     def onRunButton(self):
 
         self.result_display.clear()
-        self.code_string.selectAll()
-        self.code_string.copy()
-        string = pyperclip.paste()
+        string = self.code_string.toPlainText()
         with stdoutIO() as s:
             try:
                 string = """

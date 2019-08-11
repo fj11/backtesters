@@ -3,7 +3,7 @@
 import os
 import uuid
 import pickle
-
+import pyperclip
 import pandas as pd
 
 ################ 不可以删除 ##################
@@ -245,7 +245,7 @@ class BT(QObject):
         return
 
     def onOpenFile(self):
-        fileName = QFileDialog.getOpenFileName(self.window, "Open BackTest File", "../", "BackTest Files (*.csv *.xls *.xlsx *.bt)")[0]
+        fileName = QFileDialog.getOpenFileName(self.window, "Open BackTest File", "../", "BackTest Files (*.csv *.xls *.xlsx *.bt *.py)")[0]
         file_name, extension = os.path.splitext(fileName)
         if extension == ".csv":
             data = pd.read_csv(fileName)
@@ -259,6 +259,10 @@ class BT(QObject):
             pkl_file = open(fileName, 'rb')
             data = pickle.load(pkl_file)
             trading_center.TradeCenterWidget(self, self.window, data)
+        elif extension == ".py":
+            with open(fileName, "r", encoding="utf8") as f:
+                data = f.read()
+                coding.CodingWidget(self, self.window, data)
 
     def onSave(self, type, data, file_path):
 
@@ -269,6 +273,9 @@ class BT(QObject):
         elif type == 1:
             with open("%s "% file_path, "wb") as f:
                 pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+        elif type == 2:
+            with open("%s" % file_path, "w") as f:
+                f.write(data)
 
     def onSaveAs(self):
         currentSubWindow = self.mdi_area.currentSubWindow()
@@ -292,6 +299,12 @@ class BT(QObject):
             elif type == 1:
                 fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../",
                                                        "BackTest Files (*.bt)")[0]
+                if fileName:
+                    data = getattr(currentSubWindow, "btData")
+                    self.onSave(type, data, fileName)
+            elif type == 2:
+                fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../",
+                                                       "BackTest Files (*.py)")[0]
                 if fileName:
                     data = getattr(currentSubWindow, "btData")
                     self.onSave(type, data, fileName)
