@@ -1,5 +1,5 @@
 <settings>
     <data>
-        <update freqency="3" />
+        <update enabled="1" freqency="3" />
     </data>
 </settings>
