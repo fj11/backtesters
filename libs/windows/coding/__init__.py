@@ -53,7 +53,7 @@ class CodingWidget():
 %s""" % ("from talib.abstract import *", "import numpy as np\n", string)
                 exec(string,  self.init_env())
                 output = s.getvalue()
-                self.result_display.setText(str(s.getvalue()))
+                self.result_display.setText(str(output))
             except Exception as e:
                 self.result_display.setText(str(e))
             return
