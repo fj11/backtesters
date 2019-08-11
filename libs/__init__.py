@@ -58,7 +58,7 @@ class BT(QObject):
         self.window.setWindowTitle("回测者")
         #self.window.setWindowIcon("")
 
-        self.config = ET.parse(os.path.normpath(os.path.join(self.root, 'backtesters')))
+        self.config = ET.parse(os.path.normpath(os.path.join(self.root, 'backtester.cfg')))
 
         self.guid = get_uuid()
 

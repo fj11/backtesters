@@ -47,7 +47,7 @@ class AutoUpdate():
         update_config = self.update_config
         if int(type) != int(self.fre_value):
             update_config.set("freqency", str(type))
-            self.config.write(os.path.normpath(os.path.join(self.root, "backtesters")))
+            self.config.write(os.path.normpath(os.path.join(self.root, "backtester.cfg")))
 
     def enable_checked(self, checked):
         if self.enabled ^ checked:
@@ -55,5 +55,5 @@ class AutoUpdate():
                 self.update_config.set("enabled", "1")
             else:
                 self.update_config.set("enabled", "0")
-            self.config.write(os.path.normpath(os.path.join(self.root, "backtesters")))
+            self.config.write(os.path.normpath(os.path.join(self.root, "backtester.cfg")))
 
