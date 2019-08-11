@@ -8,7 +8,7 @@ added_files = [
                 ('icon', 'icon'),
                 ('ui/*.ui', 'ui'),
                 ('images/*', 'images'),
-                ('backtester.cfg', 'backtester.cfg')
+                ('backtester.cfg', '.')
             ]
 
 add_binaries = [
