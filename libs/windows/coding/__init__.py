@@ -47,11 +47,12 @@ class CodingWidget():
         with stdoutIO() as s:
             try:
                 string = """
-                %s
-                %s
-                %s
-                """ % ("from talib.abstract import *", "from numpy as np", string)
+# encoding: utf-8
+%s
+%s
+%s""" % ("from talib.abstract import *", "import numpy as np\n", string)
                 exec(string,  self.init_env())
+                output = s.getvalue()
                 self.result_display.setText(str(s.getvalue()))
             except Exception as e:
                 self.result_display.setText(str(e))
@@ -63,7 +64,8 @@ class CodingWidget():
     def init_env(self):
 
         local_parameters = {
-            "read_data": self.get_data
+            "read_data": self.get_data,
+            "add_signal":self.add_signal
 
         }
         return local_parameters
@@ -75,4 +77,14 @@ class CodingWidget():
             return getattr(sub_window, "btData")
         else:
             return pd.DataFrame()
+
+    def add_signal(self, name, data):
+        sub_window = [i for i in self.parent.mdi_area.subWindowList() if i.windowTitle() == name][0]
+        if hasattr(sub_window, "btData"):
+            df = getattr(sub_window, "btData")
+            df["signal"] = data
+            self.parent.display_table(df, sub_window)
+            return True
+        else:
+            return False
 
