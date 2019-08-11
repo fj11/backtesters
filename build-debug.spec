@@ -7,7 +7,8 @@ added_files = [
                 ('db/bt.db', 'db'),
                 ('icon', 'icon'),
                 ('ui/*.ui', 'ui'),
-                ('images/*', 'images')
+                ('images/*', 'images'),
+                ('backtesters', 'backtesters')
             ]
 
 add_binaries = [
