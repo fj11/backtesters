@@ -5,7 +5,6 @@ from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import \
     QMdiSubWindow, QTextEdit, QPushButton
 from PySide2.QtCore import Qt
-import pyperclip
 import contextlib
 import pandas as pd
 

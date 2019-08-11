@@ -3,7 +3,6 @@
 import os
 import uuid
 import pickle
-import pyperclip
 import pandas as pd
 
 ################ 不可以删除 ##################
