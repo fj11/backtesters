@@ -40,6 +40,7 @@ class CodingWidget():
         setattr(subWindow, "subWindowType", 2)
         setattr(subWindow, "btData", '')
         setattr(subWindow, "btFilePath", None)
+        subWindow.setWindowTitle(u"程序")
         subWindow.setWidget(python_editor)
         parent.mdi_area.addSubWindow(subWindow)
         subWindow.setAttribute(Qt.WA_DeleteOnClose)
@@ -75,12 +76,10 @@ class CodingWidget():
         local_parameters = {
             "read_data": self.get_data,
             "add_signal":self.add_signal
-
         }
         return local_parameters
 
     def get_data(self, name):
-
         sub_window = [i for i in self.parent.mdi_area.subWindowList() if i.windowTitle() == name][0]
         if hasattr(sub_window, "btData"):
             return getattr(sub_window, "btData")
