@@ -5,7 +5,6 @@ from PySide2.QtWidgets import \
     QMdiSubWindow, QTabWidget
 from PySide2.QtCore import Qt
 
-
 from .manual_update_tab import ManualSignal
 from .auto_update_tab import AutoUpdate
 

@@ -3,10 +3,12 @@ import sys
 from io import StringIO
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import \
-    QMdiSubWindow, QTextEdit, QPushButton
+    QMdiSubWindow, QTextEdit, QPushButton, QToolButton, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
 import contextlib
 import pandas as pd
+import talib
+from src import functions
 
 @contextlib.contextmanager
 def stdoutIO(stdout=None):
@@ -23,6 +25,7 @@ class CodingWidget():
         self.parent = parent
         subWindow = QMdiSubWindow()
         self.sub_window = subWindow
+        self.parent_widget = parent_widget
         loader = QUiLoader()
         python_editor = loader.load('coding.ui', parentWidget=parent_widget)
 
@@ -30,12 +33,15 @@ class CodingWidget():
 
         self.result_display = python_editor.findChild(QTextEdit, "result_display")
 
+        python_editor.findChild(QToolButton).clicked.connect(lambda:self.onClickedFunctionButton())
         python_editor.findChild(QPushButton, "run").clicked.connect(lambda :self.onRunButton())
         python_editor.findChild(QPushButton, "cancel").clicked.connect(lambda: self.onCancelButton())
 
         self.code_string.textChanged.connect(lambda :self.onCodeChanged())
         if data:
             self.code_string.setPlainText(data)
+
+        self.python_editor = python_editor
 
         setattr(subWindow, "subWindowType", 2)
         setattr(subWindow, "btData", '')
@@ -96,3 +102,58 @@ class CodingWidget():
         else:
             return False
 
+    def onClickedFunctionButton(self):
+        loader = QUiLoader()
+        function_ui = loader.load('function_description.ui', parentWidget=self.python_editor)
+        function_ui.setWindowTitle("函数说明")
+        function_ui.show()
+
+        self.tree = function_ui.findChild(QTreeWidget)
+        self.demo = function_ui.findChild(QTextEdit)
+
+        talib_groups = talib.get_function_groups()
+
+        for key in talib_groups.keys():
+            node = QTreeWidgetItem(self.tree)
+            node.setText(0, key)
+            for value in talib_groups[key]:
+                sub_node = QTreeWidgetItem(node)
+                sub_node.setText(0, value)
+        names = functions.functions_name
+        for key in names.keys():
+            node = QTreeWidgetItem(self.tree)
+            node.setText(0, key)
+            for name in names[key].keys():
+                sub_node = QTreeWidgetItem(node)
+                sub_node.setText(0, name)
+        self.tree.itemClicked.connect(
+            lambda event1, event2: self.onFunctionTreeItemClicked(event1, event2))
+        self.tree.itemDoubleClicked.connect(
+            lambda event1, event2: self.onFunctionTreeItemDoubleClicked(event1, event2))
+        return
+
+    def onFunctionTreeItemClicked(self, item, column):
+
+        text = item.text(column)
+        name = ""
+        self.demo.clear()
+        if text in talib.get_functions():
+            indicator = talib.abstract.Function(text.lower())
+            info = indicator.info
+            name = info.get("display_name", "")
+        if text in functions.functions_name["自定义函数"].keys():
+            name = functions.functions_name["自定义函数"][text]["demo_code"]
+        self.demo.setText(name)
+        return
+
+    def onFunctionTreeItemDoubleClicked(self, item, column):
+        text = item.text(column)
+        function_name = ""
+        name = "%s()"
+        if text in talib.get_functions():
+            function_name = text
+        if text in functions.functions_name["自定义函数"].keys():
+            function_name = text
+        if function_name:
+            self.code_string.append(name % function_name)
+        return
