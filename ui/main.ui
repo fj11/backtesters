@@ -62,6 +62,16 @@
     <property name="title">
      <string>文件</string>
     </property>
+    <widget class="QMenu" name="action_new">
+     <property name="title">
+      <string>新建</string>
+     </property>
+     <addaction name="actiontable"/>
+     <addaction name="actioncode"/>
+     <addaction name="actiontrategy"/>
+     <addaction name="actionpool"/>
+    </widget>
+    <addaction name="action_new"/>
     <addaction name="actionopen"/>
     <addaction name="actionsave"/>
     <addaction name="actionsave_as"/>
@@ -121,7 +131,6 @@
     <property name="title">
      <string>代码</string>
     </property>
-    <addaction name="actioncoding"/>
     <addaction name="actionrun"/>
    </widget>
    <addaction name="file"/>
@@ -671,18 +680,6 @@
     </layout>
    </widget>
   </widget>
-  <action name="actionnew">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset>
-     <normaloff>../icon/add.png</normaloff>../icon/add.png</iconset>
-   </property>
-   <property name="text">
-    <string>新建</string>
-   </property>
-  </action>
   <action name="actionopen">
    <property name="icon">
     <iconset>
@@ -912,6 +909,9 @@
    </property>
   </action>
   <action name="actioncoding">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset>
      <normaloff>../icon/python.png</normaloff>../icon/python.png</iconset>
@@ -923,6 +923,45 @@
   <action name="actionrun">
    <property name="text">
     <string>运行</string>
+   </property>
+  </action>
+  <action name="actiontable">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>../icon/sheet.png</normaloff>../icon/sheet.png</iconset>
+   </property>
+   <property name="text">
+    <string>表格</string>
+   </property>
+  </action>
+  <action name="actioncode">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icon/python.png</normaloff>../icon/python.png</iconset>
+   </property>
+   <property name="text">
+    <string>代码</string>
+   </property>
+  </action>
+  <action name="actiontrategy">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icon/ana.ico</normaloff>../icon/ana.ico</iconset>
+   </property>
+   <property name="text">
+    <string>策略</string>
+   </property>
+  </action>
+  <action name="actionpool">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icon/pool.ico</normaloff>../icon/pool.ico</iconset>
+   </property>
+   <property name="text">
+    <string>股票池</string>
    </property>
   </action>
  </widget>

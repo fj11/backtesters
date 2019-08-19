@@ -14,12 +14,12 @@ from PySide2.QtWidgets import QMdiArea, \
     QMessageBox, QTableView, QToolBox,\
     QListWidget, QAction, QComboBox, QDialogButtonBox, QLineEdit, \
     QSpinBox, QPushButton, QFileDialog,\
-    QSlider
+    QSlider, QInputDialog
 from PySide2.QtCore import QObject, Qt
 
 from src import sql, pandas_mode, setting
 from. import dialogs
-from libs.windows import trading_center, grid_view, data_center, coding
+from libs.windows import trading_center, grid_view, data_center, coding, pool
 from libs.dialogs import properties, functions, signals, accounts
 
 ROOT = os.path.normpath(os.path.join(os.curdir, ".."))
@@ -84,7 +84,6 @@ class BT(QObject):
         self.action_open_file = self.window.findChild(QAction, "actionopen")
         self.action_save_file = self.window.findChild(QAction, "actionsave")
         self.action_save_as_flie = self.window.findChild(QAction, "actionsave_as")
-        self.action_new_file = self.window.findChild(QAction, "actionnew")
 
     def loadShowToolBox(self):
         for i in range(self.show_contract.count()):
@@ -117,7 +116,6 @@ class BT(QObject):
         self.action_about.triggered.connect(self.about)
         self.action_account.triggered.connect(self.onAccounts)
         self.action_backtest.triggered.connect(self.onBacktest)
-        self.action_new_file.triggered.connect(self.onNewFile)
         self.action_open_file.triggered.connect(self.onOpenFile)
         self.action_save_file.triggered.connect(self.onSaveAs)
         self.action_save_as_flie.triggered.connect(self.onSaveAs)
@@ -129,8 +127,10 @@ class BT(QObject):
         self.window.findChild(QAction, "action_delete_column").triggered.connect(self.onDeleteColumn)
         self.window.findChild(QAction, "action_registration").triggered.connect(self.registration)
         self.window.findChild(QAction, "actionupdate").triggered.connect(self.update)
-        self.window.findChild(QAction, "actioncoding").triggered.connect(self.code)
-
+        self.window.findChild(QAction, "actioncode").triggered.connect(self.code)
+        self.window.findChild(QAction, "actiontable").triggered.connect(self.code)
+        self.window.findChild(QAction, "actiontrategy").triggered.connect(self.onBacktest)
+        self.window.findChild(QAction, "actionpool").triggered.connect(self.pool)
 
     def onDeleteColumn(self):
         current_window = self.mdi_area.currentSubWindow()
@@ -216,7 +216,20 @@ class BT(QObject):
         return
 
     def code(self):
-        coding.CodingWidget(self, self.window)
+        text, ok = QInputDialog.getText(self.window, u'输入', '请输入文件名称')
+        if ok:
+            if text:
+                coding.CodingWidget(self, self.window, text=text)
+            else:
+                self.messageBox("请输入文件名")
+
+    def pool(self):
+        text, ok = QInputDialog.getText(self.window, u'输入', '请输入文件名称')
+        if ok:
+            if text:
+                pool.PoolWidget(self, self.window, text=text)
+            else:
+                self.messageBox("请输入文件名")
 
     def onDisplay(self):
 
@@ -246,22 +259,23 @@ class BT(QObject):
     def onOpenFile(self):
         fileName = QFileDialog.getOpenFileName(self.window, "Open BackTest File", "../", "BackTest Files (*.csv *.xls *.xlsx *.bt *.py)")[0]
         file_name, extension = os.path.splitext(fileName)
+        file_name = os.path.basename(file_name)
         if extension == ".csv":
             data = pd.read_csv(fileName)
             grid_view.GridView(self, file_name, data, id=file_name,
-                                type="csv")
+                                type="csv", file_path=fileName)
         elif extension == ".xls" or  extension == ".xlsx":
             data = pd.read_excel(fileName)
             grid_view.GridView(self, file_name, data, id=file_name,
-                                type="csv")
+                                type="xlsx", file_path=fileName)
         elif extension == ".bt":
             pkl_file = open(fileName, 'rb')
             data = pickle.load(pkl_file)
-            trading_center.TradeCenterWidget(self, self.window, data)
+            trading_center.TradeCenterWidget(self, self.window, data, text=file_name, file_path=fileName)
         elif extension == ".py":
             with open(fileName, "r", encoding="utf8") as f:
                 data = f.read()
-                coding.CodingWidget(self, self.window, data)
+                coding.CodingWidget(self, self.window, data, text=file_name, file_path=fileName)
 
     def onSave(self, type, data, file_path):
 
@@ -285,10 +299,12 @@ class BT(QObject):
         else:
             type = 10
         fileName = getattr(currentSubWindow, "btFilePath")
+        default_file_name = currentSubWindow.windowTitle()
+        default_file_name = default_file_name.split("-", 1)[-1]
 
         if fileName is None or fileName == "":
             if type == 0:
-                fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../",
+                fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../%s.xlsx" % default_file_name,
                                                        "BackTest Files (*.xlsx)")[0]
                 if fileName:
                     data = getattr(currentSubWindow, "btData")
@@ -296,13 +312,13 @@ class BT(QObject):
                     data = data.drop(hidden_columns, axis=1, errors="ignore")
                     self.onSave(type, data, fileName)
             elif type == 1:
-                fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../",
+                fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../%s.bt" % default_file_name,
                                                        "BackTest Files (*.bt)")[0]
                 if fileName:
                     data = getattr(currentSubWindow, "btData")
                     self.onSave(type, data, fileName)
             elif type == 2:
-                fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../",
+                fileName = QFileDialog.getSaveFileName(self.window, "Save BackTest File", "../%s.py" % default_file_name,
                                                        "BackTest Files (*.py)")[0]
                 if fileName:
                     data = getattr(currentSubWindow, "btData")
@@ -342,8 +358,12 @@ class BT(QObject):
         line_edit.copy()
 
     def onBacktest(self):
-
-        trading_center.TradeCenterWidget(self, self.window)
+        text, ok = QInputDialog.getText(self.window, u'输入', '请输入文件名称')
+        if ok:
+            if text:
+                trading_center.TradeCenterWidget(self, self.window, text=text)
+            else:
+                self.messageBox(u"请输入文件名")
 
     def getSubWindowByAttribute(self, key, value):
         return self.__getSubWindowByAttribute(key, value)

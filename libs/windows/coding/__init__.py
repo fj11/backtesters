@@ -7,21 +7,13 @@ from PySide2.QtWidgets import \
 from PySide2.QtCore import Qt
 import contextlib
 import pandas as pd
+import numpy as np
 import talib
 from src import functions
 
-@contextlib.contextmanager
-def stdoutIO(stdout=None):
-    old = sys.stdout
-    if stdout is None:
-        stdout = StringIO()
-    sys.stdout = stdout
-    yield stdout
-    sys.stdout = old
-
 class CodingWidget():
 
-    def __init__(self, parent, parent_widget, data=None):
+    def __init__(self, parent, parent_widget, data=None, text='', file_path=None):
         self.parent = parent
         subWindow = QMdiSubWindow()
         self.sub_window = subWindow
@@ -45,8 +37,8 @@ class CodingWidget():
 
         setattr(subWindow, "subWindowType", 2)
         setattr(subWindow, "btData", '')
-        setattr(subWindow, "btFilePath", None)
-        subWindow.setWindowTitle(u"程序")
+        setattr(subWindow, "btFilePath", file_path)
+        subWindow.setWindowTitle(u"程序 - %s" % text)
         subWindow.setWidget(python_editor)
         parent.mdi_area.addSubWindow(subWindow)
         subWindow.setAttribute(Qt.WA_DeleteOnClose)
@@ -101,6 +93,27 @@ class CodingWidget():
             return True
         else:
             return False
+
+    def cross_up(self, l1, l2):
+        return np.where((l1 > l2) & (l1.shift() < l2.shift()), 1, 0)
+
+    def cross_down(self, l1, l2):
+        return np.where((l1 < l2) & (l1.shift() > l2.shift()), 1, 0)
+
+    def greater_than(self, l1, l2):
+        return np.where((l1 > l2), 1, 0)
+
+    def greater_than_or_equal_to(self, l1, l2):
+        return np.where((l1 >= l2), 1, 0)
+
+    def less_than(self, l1, l2):
+        return np.where((l1 < l2), 1, 0)
+
+    def less_than_or_equal_to(self, l1, l2):
+        return np.where((l1 <= l2), 1, 0)
+
+    def equal_to(self, l1, l2):
+        return np.where((l1 == l2), 1, 0)
 
     def onClickedFunctionButton(self):
         loader = QUiLoader()

@@ -25,7 +25,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 
 class GridView():
 
-    def __init__(self, parent, title, data, id=0, hidden_columns=[], index_column=None, childSubWindow={}, type=1):
+    def __init__(self, parent, title, data, id=0, hidden_columns=[], index_column=None, childSubWindow={}, type=1, file_path=None):
         """
 
                 :param title: Window title
@@ -57,7 +57,7 @@ class GridView():
         setattr(subWindow, "btData", data)
         setattr(subWindow, "btId", id)
         setattr(subWindow, "btType", type)
-        setattr(subWindow, "btFilePath", None)
+        setattr(subWindow, "btFilePath", file_path)
         setattr(subWindow, "childSubWindow", childSubWindow)
         setattr(subWindow, "hidden_columns", hidden_columns)
 
