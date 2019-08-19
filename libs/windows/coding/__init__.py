@@ -11,6 +11,15 @@ import numpy as np
 import talib
 from src import functions
 
+@contextlib.contextmanager
+def stdoutIO(stdout=None):
+    old = sys.stdout
+    if stdout is None:
+        stdout = StringIO()
+    sys.stdout = stdout
+    yield stdout
+    sys.stdout = old
+
 class CodingWidget():
 
     def __init__(self, parent, parent_widget, data=None, text='', file_path=None):
