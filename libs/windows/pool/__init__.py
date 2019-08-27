@@ -3,7 +3,7 @@ import sys
 from io import StringIO
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import \
-    QMdiSubWindow, QTextEdit, QPushButton, QToolButton, QTreeWidget, QTreeWidgetItem
+    QMdiSubWindow, QTextEdit, QPushButton, QToolButton, QTreeWidget, QTreeWidgetItem, QListWidget, QTableView
 from PySide2.QtCore import Qt
 
 class PoolWidget():
@@ -15,10 +15,12 @@ class PoolWidget():
         self.parent_widget = parent_widget
         loader = QUiLoader()
         pool = loader.load('stock_pool.ui', parentWidget=parent_widget)
-
+        self.list = pool.findChild(QListWidget)
+        self.grid_view = pool.findChild(QTableView)
         setattr(subWindow, "subWindowType", 3)
         setattr(subWindow, "btData", data)
         setattr(subWindow, "btFilePath", file_path)
+        setattr(subWindow, "btPoolList", self.list)
         subWindow.setWindowTitle(u"股票池 - %s" % text)
         subWindow.setWidget(pool)
         parent.mdi_area.addSubWindow(subWindow)

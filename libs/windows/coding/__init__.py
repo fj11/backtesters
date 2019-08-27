@@ -9,7 +9,8 @@ import contextlib
 import pandas as pd
 import numpy as np
 import talib
-from src import functions
+import code
+from src import functions, database, stock_item
 
 @contextlib.contextmanager
 def stdoutIO(stdout=None):
@@ -23,6 +24,9 @@ def stdoutIO(stdout=None):
 class CodingWidget():
 
     def __init__(self, parent, parent_widget, data=None, text='', file_path=None):
+
+        self.db = database.DataBase("stock")
+        self.db.encryption("123qwe!#QWE")
         self.parent = parent
         subWindow = QMdiSubWindow()
         self.sub_window = subWindow
@@ -60,6 +64,7 @@ class CodingWidget():
 
         self.result_display.clear()
         string = self.code_string.toPlainText()
+        output = ""
         with stdoutIO() as s:
             try:
                 string = """
@@ -67,13 +72,14 @@ class CodingWidget():
 %s
 %s
 %s
-%s""" % ("from talib.abstract import *", "import numpy as np", "import pandas as pd\n", string)
-                exec(string,  self.init_env())
-                output = s.getvalue()
-                self.result_display.setText(str(output))
+%s
+%s""" % ("import talib", "from talib.abstract import *", "import numpy as np", "import pandas as pd\n", string)
+                c = code.compile_command(string, "<stdin>", "exec")
+                exec(c,  self.init_env())
             except Exception as e:
-                self.result_display.setText(str(e))
-            return
+                print(str(e))
+            output = s.getvalue()
+        self.result_display.setText(output)
 
     def onCancelButton(self):
         return
@@ -82,7 +88,17 @@ class CodingWidget():
 
         local_parameters = {
             "read_data": self.get_data,
-            "add_signal":self.add_signal
+            "add_signal_to_sheet": self.add_signal_to_sheet,
+            "cross_up": self.cross_up,
+            "cross_down": self.cross_down,
+            "greater_than": self.greater_than,
+            "greater_than_or_equal_to": self.greater_than_or_equal_to,
+            "less_than": self.less_than,
+            "less_than_or_equal_to": self.less_than_or_equal_to,
+            "equal_to": self.equal_to,
+            "get_stock_ids": self.get_stocks,
+            "get_stock": self.get_stock,
+            "has_stock": self.has_stock,
         }
         return local_parameters
 
@@ -93,7 +109,7 @@ class CodingWidget():
         else:
             return pd.DataFrame()
 
-    def add_signal(self, name, data):
+    def add_signal_to_sheet(self, name, data):
         sub_window = [i for i in self.parent.mdi_area.subWindowList() if i.windowTitle() == name][0]
         if hasattr(sub_window, "btData"):
             df = getattr(sub_window, "btData")
@@ -123,6 +139,16 @@ class CodingWidget():
 
     def equal_to(self, l1, l2):
         return np.where((l1 == l2), 1, 0)
+
+    def get_stocks(self):
+        return [i.split("_", 1)[-1] for i in self.db.list_tables()]
+
+    def get_stock(self, id, select="*", where=""):
+        return stock_item.StockItem(self.parent, id, self.db, select=select, where=where)
+
+    def has_stock(self, id, freqency="daily"):
+        table = "%s_%s" % (freqency, id)
+        return self.db.is_table(table)
 
     def onClickedFunctionButton(self):
         loader = QUiLoader()

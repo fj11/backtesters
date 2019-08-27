@@ -24,7 +24,7 @@
       <widget class="QListWidget" name="listWidget"/>
      </item>
      <item>
-      <widget class="QTableWidget" name="tableWidget"/>
+      <widget class="QTableView" name="tableView"/>
      </item>
     </layout>
    </item>
