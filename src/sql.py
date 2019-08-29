@@ -72,7 +72,10 @@ if __name__ == "__main__":
     # for name, group in read("option/contract").groupby(["underlying_order_book_id"]):
     #     print group.columns
     #     break
-    print(read("option/contracts/10000001").date)
+    df = read("option/contracts/10000001")
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.resample('M', on="date").mean()
+    print(df)
     # print(read("option/underlyings/M1803", select="close", where="date='2017-03-15 00:00:00'").at[0, "close"])
     # print(read("option/contracts/10001307").columns)
     # d = read('option/contract')
