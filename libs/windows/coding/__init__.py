@@ -205,3 +205,8 @@ class CodingWidget():
         if function_name:
             self.code_string.append(name % function_name)
         return
+
+    def add_to_pool(self, name, *stock_ids):
+        for stock_id in stock_ids:
+            si = stock_item.StockItem(self.parent, stock_id, self.db)
+            si.add_to_pool(name)
