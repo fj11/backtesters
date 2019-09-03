@@ -18,7 +18,7 @@ functions_name = {
 
         "get_stock":{
             "name": "get_stock",
-            "demo_code": "# 获取股票实例\n\nstock_id = get_stock_ids()\nstock_item = get_stock(stock_id[1])\nprint(stock_item.daily.text)\n"
+            "demo_code": "# 获取股票实例\n\nstock_id = get_stock_ids()\nstock_item = get_stock(stock_id[1])\nprint(stock_item.daily().text)\n"
         },
 
 
