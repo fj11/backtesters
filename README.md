@@ -9,8 +9,7 @@
 * Has abundant financial index
 * Generate market order by manual or by signal
 * Create strategy with or without code
-* Strategy can be saved
-* Code can be saved
+* Strategy, code and data can be saved
 
 ## Requirements
 
