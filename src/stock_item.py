@@ -29,7 +29,7 @@ class StockItem():
     def monthly(self):
         if self.__di is None:
             self.__di = data_item.DataItem("daily_%s" % self.stock_id, self.db, self.select, self.where)
-        self.__di.to_montyly()
+        self.__di.to_monthly()
         return self.__di
 
     def weekly(self):

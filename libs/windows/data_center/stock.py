@@ -40,14 +40,14 @@ class Stock(QThread):
                 if self.query.is_local_table_exist(table, local_sql):
                     start_date_string = self.query.get_started_date(table, local_sql)
                     if start_date_string:
-                        df = pd.read_sql_query("""select * from "%s" where date > '%s'""" % (table, start_date_string),
+                        df = pd.read_sql_query("""select * from "%s" where date > '%s' AND date < '%s'""" % (table, start_date_string, self.query.TODAY_STR),
                                                        con=remote_sql)
                         self.query.write(df, table, local_sql, if_exists='append')
                         self.parent.signals.message.emit(
                                     u"已更新股票：%s 日线行情,开始时间: %s, 结束时间: %s" % (id, start_date_string, self.query.TODAY_STR))
                 else:
                     if self.query.is_remote_table_exist(table, remote_sql):
-                        df = pd.read_sql_query('select * from "%s"' % table, con=remote_sql)
+                        df = pd.read_sql_query("""select * from "%s" where date < '%s'""" % (table, self.query.TODAY_STR), con=remote_sql)
                         self.query.write(df, table, local_sql, if_exists='replace')
                         self.parent.signals.message.emit(u"已更新股票：%s 日线行情" % id)
                 self.parent.signals.process.emit(i+1)

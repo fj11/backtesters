@@ -64,6 +64,7 @@ def list_tables():
     return [i[0] for i in tables]
 
 if __name__ == "__main__":
+
     encryption("123qwe!@#QWE")
     # print(help(SQL))
     # print(list_tables())
@@ -74,8 +75,13 @@ if __name__ == "__main__":
     #     break
     df = read("option/contracts/10000001")
     df["date"] = pd.to_datetime(df["date"])
-    df = df.resample('M', on="date").mean()
-    print(df)
+    df = df.resample('M', on="date")
+    for i in df.groups:
+        a = df.get_group(i)
+        print(a)
+
+
+    print(df.mean())
     # print(read("option/underlyings/M1803", select="close", where="date='2017-03-15 00:00:00'").at[0, "close"])
     # print(read("option/contracts/10001307").columns)
     # d = read('option/contract')

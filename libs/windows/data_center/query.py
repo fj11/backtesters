@@ -6,7 +6,7 @@ class Query():
 
     def __init__(self):
         self.TODAY = datetime.datetime.today()
-        # TODAY = datetime.datetime(year=2018, month=12, day=31)
+        self.TODAY = datetime.datetime(year=2011, month=12, day=31)
         self.TODAY_STR = self.TODAY.strftime('%Y%m%d')
         self.DELTA = datetime.timedelta(days=1)
 
