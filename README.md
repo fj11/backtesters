@@ -1,13 +1,16 @@
 # BACKTESTER
 
 > Backtester is a financial research system which can help you analysis the stock, option and future.
+> ![Test Image 7](images/main.png)
+
 
 ## Advantage
 * Contains the whole history data of the market
 * Has abundant financial index
 * Generate market order by manual or by signal
-* Create strategy without code
-* Strategy can be saved 
+* Create strategy with or without code
+* Strategy can be saved
+* Code can be saved
 
 ## Requirements
 
