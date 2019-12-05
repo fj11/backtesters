@@ -1,7 +1,7 @@
 # BACKTESTER
 
 > Backtester is a financial research system which can help you do the backtest of your strategy for stock, option and future.
-> ![Main UI](images/main.png)
+> ![Main UI](images/all.png)
 
 
 ## Advantage
