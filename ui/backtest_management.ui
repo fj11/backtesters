@@ -74,6 +74,11 @@
                   <string>期权标的</string>
                  </property>
                 </item>
+                <item>
+                 <property name="text">
+                  <string>股票</string>
+                 </property>
+                </item>
                </widget>
               </item>
              </layout>
@@ -308,6 +313,14 @@
           <property name="text">
            <string>回测</string>
           </property>
+          <item>
+           <property name="text">
+            <string>股票</string>
+           </property>
+           <property name="whatsThis">
+            <string>stock</string>
+           </property>
+          </item>
           <item>
            <property name="text">
             <string>期权</string>

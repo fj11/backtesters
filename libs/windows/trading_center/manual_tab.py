@@ -168,6 +168,13 @@ class ManualSignal():
             #     underlying_ids.append(self.option_list.item(index, 1).text())
             self.manual_create_order.findChild(QComboBox, "underlying_id").addItems(ids)
             self.manual_create_order.findChild(QComboBox, "contract_id").setEnabled(False)
+        elif text == "股票":
+            # date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
+            table = "stock/contract"
+            data = sql.read(table)
+            ids = [id for id in data["order_book_id"]]
+            self.manual_create_order.findChild(QComboBox, "underlying_id").addItems(ids)
+            self.manual_create_order.findChild(QComboBox, "contract_id").setEnabled(False)
 
     def onContractIdChanged(self, text):
         contract_id = self.manual_create_order.findChild(QComboBox, "contract_id")
@@ -200,12 +207,14 @@ class ManualSignal():
             symbols = list(data.symbol)
             contract_id.addItems(symbols)
             setattr(contract_id, "ids", ids)
-        else:
+        elif order_type.currentIndex() == 1:
             table = "option/underlyings/%s" % text
             date = self.manual_create_order.findChild(QDateEdit, "send_date").dateTime().toString("yyyy-MM-dd 00:00:00")
             data = sql.read(table, where="date='%s'" % date)
             close_price = data.close
             self.manual_create_order.findChild(QDoubleSpinBox, "close_price").setValue(close_price)
+        elif order_type.currentIndex() == 2:
+            table = "stock/"
 
     def onCalendarClicked(self, date, manual_create_order):
         date_str = date.toString("yyyy-MM-dd 00:00:00")

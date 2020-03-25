@@ -73,15 +73,15 @@ if __name__ == "__main__":
     # for name, group in read("option/contract").groupby(["underlying_order_book_id"]):
     #     print group.columns
     #     break
-    df = read("option/contracts/10000001")
-    df["date"] = pd.to_datetime(df["date"])
-    df = df.resample('M', on="date")
-    for i in df.groups:
-        a = df.get_group(i)
-        print(a)
+    # df = read("option/contracts/10000001")
+    # df["date"] = pd.to_datetime(df["date"])
+    # df = df.resample('M', on="date")
+    # for i in df.groups:
+    #     a = df.get_group(i)
+    #     print(a)
 
 
-    print(df.mean())
+    # print(df.mean())
     # print(read("option/underlyings/M1803", select="close", where="date='2017-03-15 00:00:00'").at[0, "close"])
     # print(read("option/contracts/10001307").columns)
     # d = read('option/contract')
@@ -96,4 +96,5 @@ if __name__ == "__main__":
     #print(read("option/contract").columns)
     # print read("option/contract", where="order_book_id='M1909C3100'").loc[0, "maturity_date"]
     #print list(read("/pool", where="secShortName='%s'" % u"武钢股份").secID)[0]
+    print(read("stock/contract"))
     pass

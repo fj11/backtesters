@@ -27,6 +27,7 @@ class TradeCenter():
         self.orders = {"tradeDate":[]}
         self.optionContractPosition = {}
         self.optionUnderlyingPosition = {}
+        self.stockPosition = {}
 
     def onOptionUnderlyingOrder(self, order):
 
@@ -284,6 +285,100 @@ class TradeCenter():
                     response.ord_rej_reason = OrderRejectReason_NoEnoughPosition
                     response.ord_rej_reason_detail = u"仓位不足"
                     self.optionContractPosition.pop(order.sec_id)
+        return response
+
+    def onStockOrder(self, order):
+        response = ExecRpt()
+        response.sec_id = order.sec_id
+        response.position_effect = order.position_effect
+        response.side = order.side
+        response.transact_time = order.sending_time
+        amount = abs(order.price * order.volume)
+        commission = abs(amount * self.commission_ratio)
+        if order.side == OrderSide_Bid:
+            # open
+            if order.position_effect == PositionEffect_Open:
+                # buy
+                if self.cash.available >= (amount + commission):
+                    if order.sec_id not in self.stockPosition:
+                        self.stockPosition[order.sec_id] = Position()
+                    position = self.stockPosition.get(order.sec_id)
+                    position.init_time = order.sending_time
+                    position.short_name = order.short_name
+                    position.sec_id = order.sec_id
+                    position.date = order.sending_time
+                    position.side = order.side
+                    position.transact_time = order.sending_time
+                    position.price = order.price
+                    position.volume_today = order.volume
+                    position.volume += position.volume_today
+                    position.commission += commission
+                    position.cost = amount
+                    position.cum_cost += (position.cost + commission)
+                    position.amount += amount
+                    position.vwap = position.cum_cost / position.volume
+                    self.cash.cost += position.cum_cost
+                    self.cash.cum_commission += commission
+                    self.cash.available -= position.cum_cost
+                    self.cash.cum_inout += abs(position.cum_cost)
+                    self.cash.cum_commission += commission
+
+                    #self.stockPosition[order.sec_id] = position
+                    response.price = order.price
+                    response.volume = order.volume
+                    response.amount = amount
+                else:
+                    response.ord_rej_reason = OrderRejectReason_NoEnoughCash
+                    response.ord_rej_reason_detail = u"现金不足"
+                pass
+            elif order.position_effect == PositionEffect_Close:
+                # short: not support
+                pass
+        elif order.side == OrderSide_Ask:
+            #close
+            if order.position_effect == PositionEffect_Open:
+                # cover: not support
+                pass
+            elif order.position_effect == PositionEffect_Close:
+                # sell
+                position = self.stockPosition.get(order.sec_id, Position())
+                # 因该用avialible_today来判断，但是为了调试方便，改为volume
+                if position.volume >= order.volume:
+                    position.transact_time = order.sending_time
+                    position.short_name = order.short_name
+                    position.sec_id = order.sec_id
+                    position.side = order.side
+                    position.transact_time = order.sending_time
+                    position.price = order.price
+                    position.date = order.sending_time
+                    position.volume_today = order.volume * -1
+                    position.volume += position.volume_today
+                    position.commission += commission
+                    position.amount += amount
+                    position.income += amount
+                    position.cum_cost += commission
+                    position.pnl = position.income - position.cum_cost
+                    self.cash.cum_pnl += position.pnl
+                    self.cash.income += position.income
+                    self.cash.cum_inout += abs(position.income) + abs(commission)
+                    self.cash.cum_commission += commission
+                    self.cash.cost += commission
+                    self.cash.available += (position.income - commission)
+                    self.cash.pnl += position.pnl
+                    if position.pnl > 0:
+                        self.performance.total_win += position.pnl
+                        self.performance.win_count += 1
+                    elif position.pnl < 0:
+                        self.performance.lose_count += 1
+                        self.performance.total_loss += abs(position.pnl)
+                    if position.volume == 0:
+                        position.close_time = order.sending_time
+                    response.price = order.price
+                    response.volume = order.volume
+                    response.amount = amount
+                else:
+                    response.ord_rej_reason = OrderRejectReason_NoEnoughPosition
+                    response.ord_rej_reason_detail = u"仓位不足"
         return response
 
     def put_option_cash_deposit(self, strike_price, var_price, settle_price, volume):
